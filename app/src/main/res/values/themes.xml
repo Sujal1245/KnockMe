@@ -2,4 +2,8 @@
 <resources>
 
     <style name="Theme.KnockMe" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Theme for FirebaseUI Auth activities -->
+    <style name="Theme.FirebaseUI.Auth" parent="Theme.AppCompat.Light.NoActionBar" />
+
 </resources>

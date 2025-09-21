@@ -7,6 +7,7 @@ activityCompose = "1.11.0"
 composeBom = "2025.09.00"
 googleGmsServices = "4.4.3"
 firebaseBom = "34.3.0"
+firebaseUiAuth = "9.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -20,6 +21,7 @@ androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "u
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+firebase-ui-auth = { group = "com.firebaseui", name = "firebase-ui-auth", version.ref = "firebaseUiAuth" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
