@@ -40,7 +40,7 @@ fun OnboardingScreen(
     val signInLauncher = rememberLauncherForActivityResult(
         contract = FirebaseAuthUIActivityResultContract(),
     ) { result ->
-        viewModel.processSignInResult(result, result.resultCode ?: 0)
+        viewModel.processSignInResult(result, result.resultCode)
     }
 
     LaunchedEffect(authState) {

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
@@ -21,17 +22,20 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sujalkumar.knockme.data.model.AppUser
+import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    viewModel: HomeViewModel = koinViewModel()
+    homeViewModel: HomeViewModel = koinViewModel(),
+    authViewModel: AuthViewModel = koinViewModel()
 ){
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    
+    val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
+
     HomeScreen(
         uiState = uiState,
+        onSignOut = { authViewModel.signOut() },
         modifier = modifier
     )
 }
@@ -39,6 +43,7 @@ fun HomeScreen(
 @Composable
 internal fun HomeScreen(
     uiState: HomeUiState,
+    onSignOut: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -82,7 +87,13 @@ internal fun HomeScreen(
                                 text = "Email: ${user.email ?: "Not available"}",
                                 style = MaterialTheme.typography.bodyLarge
                             )
-                            // You can add more user details here if needed
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = onSignOut,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Sign Out")
+                            }
                         }
                     }
                 } else {
@@ -99,7 +110,7 @@ internal fun HomeScreen(
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreviewNoUser() {
-    HomeScreen(uiState = HomeUiState.Success(user = null))
+    HomeScreen(uiState = HomeUiState.Success(user = null), onSignOut = {})
 }
 
 @Preview(showBackground = true)
@@ -110,11 +121,11 @@ fun HomeScreenPreviewWithUser() {
         displayName = "John Doe",
         email = "john.doe@example.com"
     )
-    HomeScreen(uiState = HomeUiState.Success(user = sampleUser))
+    HomeScreen(uiState = HomeUiState.Success(user = sampleUser), onSignOut = {})
 }
 
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreviewError() {
-    HomeScreen(uiState = HomeUiState.Error)
+    HomeScreen(uiState = HomeUiState.Error, onSignOut = {})
 }
