@@ -9,6 +9,7 @@ composeBom = "2025.09.00"
 googleGmsServices = "4.4.3"
 firebaseBom = "34.3.0"
 firebaseUiAuth = "9.0.0"
+playServicesAuth = "21.4.0" # Added
 
 nav3Core = "1.0.0-alpha09"
 nav3Lifecycle = "1.0.0-alpha04"
@@ -33,6 +34,7 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 firebase-ui-auth = { group = "com.firebaseui", name = "firebase-ui-auth", version.ref = "firebaseUiAuth" }
+google-play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" } # Added
 
 nav3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3Core" }
 nav3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3Core" }
@@ -52,4 +54,3 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerialization" }
 google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleGmsServices" }
-

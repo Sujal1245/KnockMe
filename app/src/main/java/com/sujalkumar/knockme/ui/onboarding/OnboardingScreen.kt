@@ -1,19 +1,35 @@
 package com.sujalkumar.knockme.ui.onboarding
 
+// It's good practice to have a specific Google icon,
+// but for now, we'll use a generic one or just text.
+// You might want to add a Google logo to your drawables.
+import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,8 +40,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
-import com.sujalkumar.knockme.ui.auth.AuthViewModel
+// import com.sujalkumar.knockme.R // Only if you use a drawable for Google Icon
 import com.sujalkumar.knockme.ui.auth.AuthState
+import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -37,28 +54,59 @@ fun OnboardingScreen(
     val authState by viewModel.authState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val signInLauncher = rememberLauncherForActivityResult(
+    // Launcher for FirebaseUI (Email)
+    val emailSignInLauncher = rememberLauncherForActivityResult(
         contract = FirebaseAuthUIActivityResultContract(),
     ) { result ->
-        viewModel.processSignInResult(result, result.resultCode)
+        viewModel.processEmailSignInResult(result, result.resultCode)
+    }
+
+    // Launcher for Google Sign-In
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            viewModel.processGoogleSignInResult(result.data)
+        } else {
+            if (result.data == null) {
+                viewModel.resetAuthState()
+            }
+        }
     }
 
     LaunchedEffect(authState) {
         when (val state = authState) {
-            is AuthState.SignInIntentReady -> {
-                signInLauncher.launch(state.intent)
-                viewModel.resetAuthState() 
-            }
-            is AuthState.AuthenticationSuccess -> { // Updated state for navigation
-                onNavigateToHome()
-                viewModel.resetAuthState() 
-            }
-            is AuthState.SignInError -> {
-                val errorMessage = state.result.idpResponse?.error?.message ?: "Sign-in failed"
-                snackbarHostState.showSnackbar(message = errorMessage)
+            is AuthState.EmailSignInIntentReady -> {
+                emailSignInLauncher.launch(state.intent)
                 viewModel.resetAuthState()
             }
-            else -> { /* Other states handled by UI changes directly or are intermediate */ }
+            is AuthState.GoogleSignInIntentReady -> {
+                googleSignInLauncher.launch(state.intent)
+                viewModel.resetAuthState()
+            }
+            is AuthState.AuthenticationSuccess -> {
+                onNavigateToHome()
+                // No reset here, navigation handles it.
+            }
+            is AuthState.EmailSignInError -> {
+                val errorMessage = state.result.idpResponse?.error?.message ?: "Email sign-in failed"
+                snackbarHostState.showSnackbar(message = errorMessage, duration = SnackbarDuration.Long)
+                viewModel.resetAuthState()
+            }
+            is AuthState.GoogleSignInError -> {
+                val errorMessage = state.apiException?.localizedMessage ?: "Google sign-in failed"
+                snackbarHostState.showSnackbar(message = "Google Sign-In Error: $errorMessage", duration = SnackbarDuration.Long)
+                viewModel.resetAuthState()
+            }
+            is AuthState.FirebaseAuthenticationError -> {
+                val errorMessage = state.exception.localizedMessage ?: "Authentication process failed"
+                snackbarHostState.showSnackbar(message = "Error: $errorMessage", duration = SnackbarDuration.Long)
+                viewModel.resetAuthState()
+            }
+            is AuthState.SignOutSuccess -> {
+                viewModel.resetAuthState()
+            }
+            else -> { /* Idle, ProcessingSignIn, SigningOut handled by UI visibility changes */ }
         }
     }
 
@@ -72,28 +120,74 @@ fun OnboardingScreen(
                 .padding(innerPadding),
             contentAlignment = Alignment.Center
         ) {
-            when (authState) {
-                AuthState.SigningIn, AuthState.AuthenticationSuccess -> { // Show progress indicator also when checking auth state or on success before navigation
-                    CircularProgressIndicator()
-                }
-                AuthState.Idle, is AuthState.SignInIntentReady, is AuthState.SignInError, AuthState.SigningOut, AuthState.SignOutError, AuthState.SignOutSuccess -> {
-                    // Show sign-in UI for Idle, after errors, or after successful sign out (which transitions to Idle)
+
+            AnimatedVisibility(
+                visible = authState == AuthState.ProcessingSignIn || authState == AuthState.AuthenticationSuccess, // Corrected state
+                modifier = Modifier.align(Alignment.Center)
+            ) {
+                CircularProgressIndicator()
+            }
+
+            AnimatedVisibility(
+                visible = authState == AuthState.Idle ||
+                        authState is AuthState.EmailSignInIntentReady ||
+                        authState is AuthState.GoogleSignInIntentReady ||
+                        authState is AuthState.EmailSignInError ||
+                        authState is AuthState.GoogleSignInError ||
+                        authState is AuthState.FirebaseAuthenticationError ||
+                        authState == AuthState.SigningOut ||
+                        authState == AuthState.SignOutError ||
+                        authState == AuthState.SignOutSuccess,
+                modifier = Modifier.align(Alignment.Center)
+            ) {
+                Surface(
+                    modifier = Modifier.padding(16.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    shadowElevation = 4.dp
+                ) {
                     Column(
+                        modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
+                        Icon(
+                            imageVector = Icons.Filled.Lock,
+                            contentDescription = "App Logo",
+                            modifier = Modifier.size(80.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
                         Text(
-                            text = "KnockMe",
-                            style = MaterialTheme.typography.headlineMedium
+                            text = "Welcome to KnockMe",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Welcome! Please sign in to continue.",
-                            style = MaterialTheme.typography.bodyLarge
+                            text = "Sign in to connect and get started.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Button(onClick = { viewModel.createSignInIntent() }) {
-                            Text("Sign In / Register")
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        OutlinedButton(
+                            onClick = { viewModel.createGoogleSignInIntent() },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            // Icon(painter = painterResource(id = R.drawable.ic_google_logo), contentDescription = "Google Logo", modifier = Modifier.size(ButtonDefaults.IconSize))
+                            // Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                            Text("Continue with Google")
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Button(
+                            onClick = { viewModel.createEmailSignInIntent() },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(imageVector = Icons.Filled.Email, contentDescription = "Email Icon", modifier = Modifier.size(ButtonDefaults.IconSize))
+                            Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                            Text("Continue with Email")
                         }
                     }
                 }

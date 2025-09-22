@@ -53,10 +53,11 @@ dependencies {
     implementation(libs.androidx.datastore.core)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
-    // Firebase
+    // Firebase & Google
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.ui.auth)
+    implementation(libs.google.play.services.auth) // Added play-services-auth
 
     // Navigation
     implementation(libs.nav3.runtime)
