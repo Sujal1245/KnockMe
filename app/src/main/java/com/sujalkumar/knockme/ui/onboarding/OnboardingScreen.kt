@@ -5,7 +5,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,16 +14,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardElevation
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -32,7 +26,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,6 +35,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.sujalkumar.knockme.R
@@ -82,70 +77,53 @@ fun OnboardingScreen(
                 emailSignInLauncher.launch(state.intent)
                 viewModel.resetAuthState()
             }
-
             is AuthState.GoogleSignInIntentReady -> {
                 googleSignInLauncher.launch(state.intent)
                 viewModel.resetAuthState()
             }
-
             is AuthState.AuthenticationSuccess -> {
                 onNavigateToHome()
             }
-
             is AuthState.EmailSignInError -> {
-                val errorMessage =
-                    state.result.idpResponse?.error?.message ?: "Email sign-in failed"
-                snackbarHostState.showSnackbar(
-                    message = errorMessage,
-                    duration = SnackbarDuration.Long
-                )
+                val errorMessage = state.result.idpResponse?.error?.message ?: "Email sign-in failed"
+                snackbarHostState.showSnackbar(message = errorMessage, duration = SnackbarDuration.Long)
                 viewModel.resetAuthState()
             }
-
             is AuthState.GoogleSignInError -> {
                 val errorMessage = state.apiException?.localizedMessage ?: "Google sign-in failed"
-                snackbarHostState.showSnackbar(
-                    message = "Google Sign-In Error: $errorMessage",
-                    duration = SnackbarDuration.Long
-                )
+                snackbarHostState.showSnackbar(message = "Google Sign-In Error: $errorMessage", duration = SnackbarDuration.Long)
                 viewModel.resetAuthState()
             }
-
             is AuthState.FirebaseAuthenticationError -> {
-                val errorMessage =
-                    state.exception.localizedMessage ?: "Authentication process failed"
-                snackbarHostState.showSnackbar(
-                    message = "Error: $errorMessage",
-                    duration = SnackbarDuration.Long
-                )
+                val errorMessage = state.exception.localizedMessage ?: "Authentication process failed"
+                snackbarHostState.showSnackbar(message = "Error: $errorMessage", duration = SnackbarDuration.Long)
                 viewModel.resetAuthState()
             }
-
             is AuthState.SignOutSuccess -> {
                 viewModel.resetAuthState()
             }
-
-            else -> { /* Idle, ProcessingSignIn, SigningOut handled by UI visibility changes */
-            }
+            else -> { /* Other states handled by UI visibility */ }
         }
     }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .padding(horizontal = 24.dp, vertical = 32.dp),
             contentAlignment = Alignment.Center
         ) {
 
             AnimatedVisibility(
-                visible = authState == AuthState.ProcessingSignIn || authState == AuthState.AuthenticationSuccess, // Corrected state
+                visible = authState == AuthState.ProcessingSignIn || authState == AuthState.AuthenticationSuccess,
                 modifier = Modifier.align(Alignment.Center)
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
 
             AnimatedVisibility(
@@ -160,67 +138,74 @@ fun OnboardingScreen(
                         authState == AuthState.SignOutSuccess,
                 modifier = Modifier.align(Alignment.Center)
             ) {
-                Column {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
                     Image(
                         painter = painterResource(R.drawable.knock_door),
-                        contentDescription = "App Logo"
+                        contentDescription = null
                     )
-                    ElevatedCard(
-                        modifier = modifier
-                            .padding(16.dp),
-                        shape = MaterialTheme.shapes.medium,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+
+                    Text(
+                        text = "Welcome to KnockMe",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Sign in to connect and knock!",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                    Spacer(modifier = Modifier.height(48.dp))
+
+                    Button(
+                        onClick = { viewModel.createGoogleSignInIntent() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
-                        Column(
-                            modifier = Modifier.padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "Welcome to KnockMe",
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Sign in to connect and get started.",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(32.dp))
-
-                            OutlinedButton(
-                                onClick = { viewModel.createGoogleSignInIntent() },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.google),
-                                    contentDescription = "Google Logo",
-                                    modifier = Modifier.size(ButtonDefaults.IconSize)
-                                )
-                                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                                Text("Continue with Google")
-                            }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Button(
-                                onClick = { viewModel.createEmailSignInIntent() },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Email,
-                                    contentDescription = "Email Icon",
-                                    modifier = Modifier.size(ButtonDefaults.IconSize)
-                                )
-                                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                                Text("Continue with Email")
-                            }
-                        }
+                        Icon(
+                            painter = painterResource(id = R.drawable.google),
+                            contentDescription = "Google Logo",
+                            modifier = Modifier.size(ButtonDefaults.IconSize)
+                        )
+                        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                        Text("Continue with Google", fontWeight = FontWeight.Medium)
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedButton(
+                        onClick = { viewModel.createEmailSignInIntent() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Email,
+                            contentDescription = "Email Icon",
+                            modifier = Modifier.size(ButtonDefaults.IconSize)
+                        )
+                        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                        Text("Continue with Email", fontWeight = FontWeight.Medium)
+                    }
+                     Spacer(modifier = Modifier.height(64.dp))
                 }
             }
         }
