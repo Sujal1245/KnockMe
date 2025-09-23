@@ -1,12 +1,11 @@
 package com.sujalkumar.knockme.ui.onboarding
 
-// It's good practice to have a specific Google icon,
-// but for now, we'll use a generic one or just text.
-// You might want to add a Google logo to your drawables.
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,12 +15,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardElevation
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -38,9 +41,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
-// import com.sujalkumar.knockme.R // Only if you use a drawable for Google Icon
+import com.sujalkumar.knockme.R
 import com.sujalkumar.knockme.ui.auth.AuthState
 import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -54,14 +58,12 @@ fun OnboardingScreen(
     val authState by viewModel.authState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Launcher for FirebaseUI (Email)
     val emailSignInLauncher = rememberLauncherForActivityResult(
         contract = FirebaseAuthUIActivityResultContract(),
     ) { result ->
         viewModel.processEmailSignInResult(result, result.resultCode)
     }
 
-    // Launcher for Google Sign-In
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -80,33 +82,51 @@ fun OnboardingScreen(
                 emailSignInLauncher.launch(state.intent)
                 viewModel.resetAuthState()
             }
+
             is AuthState.GoogleSignInIntentReady -> {
                 googleSignInLauncher.launch(state.intent)
                 viewModel.resetAuthState()
             }
+
             is AuthState.AuthenticationSuccess -> {
                 onNavigateToHome()
-                // No reset here, navigation handles it.
             }
+
             is AuthState.EmailSignInError -> {
-                val errorMessage = state.result.idpResponse?.error?.message ?: "Email sign-in failed"
-                snackbarHostState.showSnackbar(message = errorMessage, duration = SnackbarDuration.Long)
+                val errorMessage =
+                    state.result.idpResponse?.error?.message ?: "Email sign-in failed"
+                snackbarHostState.showSnackbar(
+                    message = errorMessage,
+                    duration = SnackbarDuration.Long
+                )
                 viewModel.resetAuthState()
             }
+
             is AuthState.GoogleSignInError -> {
                 val errorMessage = state.apiException?.localizedMessage ?: "Google sign-in failed"
-                snackbarHostState.showSnackbar(message = "Google Sign-In Error: $errorMessage", duration = SnackbarDuration.Long)
+                snackbarHostState.showSnackbar(
+                    message = "Google Sign-In Error: $errorMessage",
+                    duration = SnackbarDuration.Long
+                )
                 viewModel.resetAuthState()
             }
+
             is AuthState.FirebaseAuthenticationError -> {
-                val errorMessage = state.exception.localizedMessage ?: "Authentication process failed"
-                snackbarHostState.showSnackbar(message = "Error: $errorMessage", duration = SnackbarDuration.Long)
+                val errorMessage =
+                    state.exception.localizedMessage ?: "Authentication process failed"
+                snackbarHostState.showSnackbar(
+                    message = "Error: $errorMessage",
+                    duration = SnackbarDuration.Long
+                )
                 viewModel.resetAuthState()
             }
+
             is AuthState.SignOutSuccess -> {
                 viewModel.resetAuthState()
             }
-            else -> { /* Idle, ProcessingSignIn, SigningOut handled by UI visibility changes */ }
+
+            else -> { /* Idle, ProcessingSignIn, SigningOut handled by UI visibility changes */
+            }
         }
     }
 
@@ -140,54 +160,65 @@ fun OnboardingScreen(
                         authState == AuthState.SignOutSuccess,
                 modifier = Modifier.align(Alignment.Center)
             ) {
-                Surface(
-                    modifier = Modifier.padding(16.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    shadowElevation = 4.dp
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                Column {
+                    Image(
+                        painter = painterResource(R.drawable.knock_door),
+                        contentDescription = "App Logo"
+                    )
+                    ElevatedCard(
+                        modifier = modifier
+                            .padding(16.dp),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.Lock,
-                            contentDescription = "App Logo",
-                            modifier = Modifier.size(80.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            text = "Welcome to KnockMe",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Sign in to connect and get started.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(32.dp))
-
-                        OutlinedButton(
-                            onClick = { viewModel.createGoogleSignInIntent() },
-                            modifier = Modifier.fillMaxWidth()
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            // Icon(painter = painterResource(id = R.drawable.ic_google_logo), contentDescription = "Google Logo", modifier = Modifier.size(ButtonDefaults.IconSize))
-                            // Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                            Text("Continue with Google")
-                        }
+                            Text(
+                                text = "Welcome to KnockMe",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Sign in to connect and get started.",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(32.dp))
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                            OutlinedButton(
+                                onClick = { viewModel.createGoogleSignInIntent() },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.google),
+                                    contentDescription = "Google Logo",
+                                    modifier = Modifier.size(ButtonDefaults.IconSize)
+                                )
+                                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                                Text("Continue with Google")
+                            }
 
-                        Button(
-                            onClick = { viewModel.createEmailSignInIntent() },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(imageVector = Icons.Filled.Email, contentDescription = "Email Icon", modifier = Modifier.size(ButtonDefaults.IconSize))
-                            Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                            Text("Continue with Email")
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Button(
+                                onClick = { viewModel.createEmailSignInIntent() },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Email,
+                                    contentDescription = "Email Icon",
+                                    modifier = Modifier.size(ButtonDefaults.IconSize)
+                                )
+                                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                                Text("Continue with Email")
+                            }
                         }
                     }
                 }

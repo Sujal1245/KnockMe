@@ -3,6 +3,7 @@ package com.sujalkumar.knockme.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sujalkumar.knockme.data.model.AppUser
+import com.sujalkumar.knockme.data.model.KnockAlert // Added import
 import com.sujalkumar.knockme.data.repository.UserDetailsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +21,8 @@ class HomeViewModel(
     init {
         userDetailsRepository.user
             .onEach { appUser ->
-                _uiState.value = HomeUiState.Success(appUser)
+                // TODO: Fetch actual knock alerts here
+                _uiState.value = HomeUiState.Success(user = appUser, knockAlerts = emptyList()) 
             }
             .catch { 
                 _uiState.value = HomeUiState.Error 
@@ -30,7 +32,10 @@ class HomeViewModel(
 }
 
 sealed interface HomeUiState {
-    data class Success(val user: AppUser?) : HomeUiState
+    data class Success(
+        val user: AppUser?,
+        val knockAlerts: List<KnockAlert> = emptyList() // Added knockAlerts
+    ) : HomeUiState
     data object Error : HomeUiState
     data object Loading : HomeUiState
 }
