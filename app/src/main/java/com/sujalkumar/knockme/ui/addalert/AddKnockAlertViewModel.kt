@@ -55,7 +55,7 @@ class AddKnockAlertViewModel(
             }
 
             val knockAlert = KnockAlert(
-                ownerId = currentUser.uid, // Use uid from AppUser obtained via UserDetailsRepository
+                ownerId = currentUser.uid,
                 content = _alertContent.value,
                 targetTimestamp = _targetTimestamp.value
             )
