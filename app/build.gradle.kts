@@ -50,16 +50,17 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.material.icons.core) // Added
-    implementation(libs.androidx.compose.material.icons.extended) // Added
+    implementation(libs.androidx.compose.material.icons.core)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.datastore.core)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     // Firebase & Google
     implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.firestore)
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.ui.auth)
-    implementation(libs.google.play.services.auth) // Added play-services-auth
+    implementation(libs.google.play.services.auth)
 
     // Navigation
     implementation(libs.nav3.runtime)

@@ -7,8 +7,9 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSavedStateNavEntryDecorator
+import androidx.navigation3.scene.rememberSceneSetupNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import androidx.navigation3.ui.rememberSceneSetupNavEntryDecorator
+import com.sujalkumar.knockme.ui.addalert.AddKnockAlertScreen
 import com.sujalkumar.knockme.ui.home.HomeScreen
 import com.sujalkumar.knockme.ui.onboarding.OnboardingScreen
 import kotlinx.serialization.Serializable
@@ -18,6 +19,9 @@ data object OnboardingNavKey : NavKey
 
 @Serializable
 data object HomeNavKey : NavKey
+
+@Serializable
+data object AddKnockAlertNavKey : NavKey
 
 @Composable
 fun NavigationRoot(modifier: Modifier = Modifier) {
@@ -44,7 +48,22 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
 
                 is HomeNavKey -> {
                     NavEntry(key = key) {
-                        HomeScreen()
+                        HomeScreen(
+                            // Add navigation callback to HomeScreen
+                            onNavigateToAddAlert = {
+                                backStack.add(AddKnockAlertNavKey)
+                            }
+                        )
+                    }
+                }
+
+                is AddKnockAlertNavKey -> { // Added case for AddKnockAlertScreen
+                    NavEntry(key = key) {
+                        AddKnockAlertScreen(
+                            onNavigateUp = {
+                                backStack.remove(AddKnockAlertNavKey)
+                            }
+                        )
                     }
                 }
 

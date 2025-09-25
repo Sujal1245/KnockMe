@@ -1,7 +1,7 @@
 package com.sujalkumar.knockme.ui.auth
 
-import android.app.Application
 import android.app.Activity.RESULT_OK
+import android.app.Application
 import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,9 +13,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
-import com.sujalkumar.knockme.R // Ensure this is your app's R file
+import com.sujalkumar.knockme.R
 import com.sujalkumar.knockme.data.repository.UserDetailsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

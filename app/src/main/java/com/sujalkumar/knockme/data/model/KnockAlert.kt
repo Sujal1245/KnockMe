@@ -1,12 +1,12 @@
 package com.sujalkumar.knockme.data.model
 
 import kotlinx.serialization.Serializable
-import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
 
-@OptIn(ExperimentalTime::class)
+@Serializable
 data class KnockAlert(
-    val owner: AppUser? = null,
+    val id: String = "", // Firestore document ID
+    val ownerId: String = "",
     val content: String = "",
-    val timestamp: Instant? = null // Added timestamp
+    val targetTimestamp: Long = 0L, // UTC milliseconds
+    val knockedByUids: List<String> = emptyList()
 )
