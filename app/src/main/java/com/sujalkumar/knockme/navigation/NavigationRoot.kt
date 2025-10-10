@@ -6,8 +6,7 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.runtime.rememberSavedStateNavEntryDecorator
-import androidx.navigation3.scene.rememberSceneSetupNavEntryDecorator
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.sujalkumar.knockme.ui.addalert.AddKnockAlertScreen
 import com.sujalkumar.knockme.ui.home.HomeScreen
@@ -30,9 +29,8 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
         modifier = modifier,
         backStack = backStack,
         entryDecorators = listOf(
-            rememberSavedStateNavEntryDecorator(),
-            rememberViewModelStoreNavEntryDecorator(),
-            rememberSceneSetupNavEntryDecorator()
+            rememberSaveableStateHolderNavEntryDecorator(),
+            rememberViewModelStoreNavEntryDecorator()
         ),
         entryProvider = { key ->
             when (key) {
@@ -49,7 +47,6 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                 is HomeNavKey -> {
                     NavEntry(key = key) {
                         HomeScreen(
-                            // Add navigation callback to HomeScreen
                             onNavigateToAddAlert = {
                                 backStack.add(AddKnockAlertNavKey)
                             }
@@ -57,7 +54,7 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                     }
                 }
 
-                is AddKnockAlertNavKey -> { // Added case for AddKnockAlertScreen
+                is AddKnockAlertNavKey -> {
                     NavEntry(key = key) {
                         AddKnockAlertScreen(
                             onNavigateUp = {
