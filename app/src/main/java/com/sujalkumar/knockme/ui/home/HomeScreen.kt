@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Build
@@ -30,16 +32,21 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -168,7 +175,10 @@ internal fun HomeScreen(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalTime::class)
+@OptIn(
+    ExperimentalFoundationApi::class, ExperimentalTime::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 internal fun HomeScreenSuccessContent(
     user: AppUser,
@@ -277,26 +287,65 @@ internal fun HomeScreenSuccessContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text = "KnockAlerts from Others",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        if (feedKnockAlerts.isEmpty()) {
-            Text(
-                text = "No active KnockAlerts from others right now.",
-                style = MaterialTheme.typography.bodyMedium,
+        Surface(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            shape = MaterialTheme.shapes.extraLargeIncreased
+        ) {
+            Column(
                 modifier = Modifier
-                    .padding(top = 8.dp)
-                    .align(Alignment.CenterHorizontally)
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .fillMaxSize()
+                    .padding(12.dp)
             ) {
-                items(feedKnockAlerts) { displayableAlert ->
-                    KnockAlertItem(alert = displayableAlert.alert, onKnockAction = onKnockAction)
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    text = "KnockAlerts from Others",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                if (feedKnockAlerts.isEmpty()) {
+                    Text(
+                        text = "No active KnockAlerts from others right now.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                            .align(Alignment.CenterHorizontally)
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        itemsIndexed(feedKnockAlerts) { index, displayableAlert ->
+                            val shape = when {
+                                feedKnockAlerts.size == 1 -> RoundedCornerShape(16.dp)
+
+                                index == 0 -> RoundedCornerShape(
+                                    topStart = 16.dp,
+                                    topEnd = 16.dp,
+                                    bottomStart = 8.dp,
+                                    bottomEnd = 8.dp
+                                )
+
+                                index == feedKnockAlerts.lastIndex -> RoundedCornerShape(
+                                    bottomStart = 16.dp,
+                                    bottomEnd = 16.dp,
+                                    topStart = 8.dp,
+                                    topEnd = 8.dp,
+                                )
+
+                                else -> RoundedCornerShape(8.dp)
+                            }
+
+                            KnockAlertItem(
+                                alert = displayableAlert.alert,
+                                onKnockAction = onKnockAction,
+                                shape = shape
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -335,16 +384,17 @@ internal fun MyKnockAlertCard(
     }
 }
 
-@OptIn(ExperimentalTime::class)
+@OptIn(ExperimentalTime::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun KnockAlertItem(
     alert: KnockAlert,
     onKnockAction: (KnockAlert) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    shape: Shape = MaterialTheme.shapes.medium
 ) {
     OutlinedCard(
         modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium
+        shape = shape
     ) {
         Row(
             modifier = Modifier
@@ -370,11 +420,17 @@ internal fun KnockAlertItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            IconButton(onClick = { onKnockAction(alert) }) {
+
+            IconButton(
+                onClick = { onKnockAction(alert) },
+                modifier = Modifier
+                    .clip(MaterialShapes.Cookie9Sided.toShape())
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+            ) {
                 Icon(
                     imageVector = Icons.Filled.Build,
                     contentDescription = "Knock",
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
             }
         }
