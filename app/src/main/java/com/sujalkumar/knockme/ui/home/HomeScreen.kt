@@ -22,7 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.outlined.TimeToLeave
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -33,7 +33,6 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -56,20 +55,25 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     homeViewModel: HomeViewModel = koinViewModel(),
     authViewModel: AuthViewModel = koinViewModel(),
-    onNavigateToAddAlert: () -> Unit
+    onNavigateToAddAlert: () -> Unit,
+    onLogout: () -> Unit
 ) {
     val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
 
     HomeScreen(
         uiState = uiState,
         onKnockAction = { alert -> homeViewModel.knockOnAlert(alert.id) },
-        onSignOut = { authViewModel.signOut() },
+        onSignOut = {
+            authViewModel.signOut()
+            onLogout()
+        },
         onNavigateToAddAlert = onNavigateToAddAlert,
         modifier = modifier
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
+@OptIn(
+    ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
     ExperimentalMaterial3ExpressiveApi::class
 )
 @Composable
@@ -88,7 +92,18 @@ internal fun HomeScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(title = { Text("KnockMe") })
+            TopAppBar(
+                title = { Text("KnockMe") },
+                actions = {
+                    IconButton(
+                        onClick = onSignOut
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.TimeToLeave,
+                            contentDescription = "Logout Icon"
+                        )
+                    }
+                })
         },
         floatingActionButton = {
             if (showFab) {
@@ -98,7 +113,7 @@ internal fun HomeScreen(
             }
         }
     ) { innerPadding ->
-        Surface(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
@@ -132,7 +147,6 @@ internal fun HomeScreen(
                             user = state.user,
                             myKnockAlerts = state.myKnockAlerts,
                             feedKnockAlerts = state.feedKnockAlerts,
-                            onSignOut = onSignOut,
                             onKnockAction = onKnockAction,
                             onNavigateToAddAlert = onNavigateToAddAlert,
                             modifier = Modifier
@@ -160,7 +174,6 @@ internal fun HomeScreenSuccessContent(
     user: AppUser,
     myKnockAlerts: List<KnockAlert>,
     feedKnockAlerts: List<DisplayableKnockAlert>,
-    onSignOut: () -> Unit,
     onKnockAction: (KnockAlert) -> Unit,
     onNavigateToAddAlert: () -> Unit,
     modifier: Modifier = Modifier
@@ -287,15 +300,6 @@ internal fun HomeScreenSuccessContent(
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = onSignOut,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = "Sign Out")
-        }
     }
 }
 
@@ -386,9 +390,9 @@ fun HomeScreenPreviewNoUser() {
             myKnockAlerts = emptyList(),
             feedKnockAlerts = emptyList()
         ),
-        onSignOut = {},
         onKnockAction = {},
-        onNavigateToAddAlert = {}
+        onNavigateToAddAlert = {},
+        onSignOut = {}
     )
 }
 
@@ -448,9 +452,9 @@ fun HomeScreenPreviewWithUserAndAlerts() {
             myKnockAlerts = myAlerts,
             feedKnockAlerts = feedAlerts
         ),
-        onSignOut = {},
         onKnockAction = { println("Preview Knock: ${it.id}") },
-        onNavigateToAddAlert = {}
+        onNavigateToAddAlert = {},
+        onSignOut = {}
     )
 }
 
@@ -481,9 +485,9 @@ fun HomeScreenPreviewUserNoOwnAlerts() {
             myKnockAlerts = emptyList(),
             feedKnockAlerts = feedAlerts
         ),
-        onSignOut = {},
         onKnockAction = { println("Preview Knock: ${it.id}") },
-        onNavigateToAddAlert = {}
+        onNavigateToAddAlert = {},
+        onSignOut = {}
     )
 }
 
@@ -492,9 +496,9 @@ fun HomeScreenPreviewUserNoOwnAlerts() {
 fun HomeScreenPreviewError() {
     HomeScreen(
         uiState = HomeUiState.Error("Preview error message"),
-        onSignOut = {},
         onKnockAction = {},
-        onNavigateToAddAlert = {}
+        onNavigateToAddAlert = {},
+        onSignOut = {}
     )
 }
 
@@ -503,8 +507,8 @@ fun HomeScreenPreviewError() {
 fun HomeScreenPreviewLoading() {
     HomeScreen(
         uiState = HomeUiState.Loading,
-        onSignOut = {},
         onKnockAction = {},
-        onNavigateToAddAlert = {}
+        onNavigateToAddAlert = {},
+        onSignOut = {}
     )
 }

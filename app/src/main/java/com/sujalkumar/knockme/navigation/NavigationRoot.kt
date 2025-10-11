@@ -49,6 +49,10 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                         HomeScreen(
                             onNavigateToAddAlert = {
                                 backStack.add(AddKnockAlertNavKey)
+                            },
+                            onLogout = {
+                                // Will fix this later.
+//                                backStack[0] = OnboardingNavKey
                             }
                         )
                     }
