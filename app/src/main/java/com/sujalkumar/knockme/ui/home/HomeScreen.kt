@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.TimeToLeave
 import androidx.compose.material3.Card
@@ -338,7 +339,7 @@ internal fun HomeScreenSuccessContent(
                             }
 
                             KnockAlertItem(
-                                alert = displayableAlert.alert,
+                                displayableAlert = displayableAlert,
                                 onKnockAction = onKnockAction,
                                 shape = shape
                             )
@@ -385,11 +386,12 @@ internal fun MyKnockAlertCard(
 @OptIn(ExperimentalTime::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun KnockAlertItem(
-    alert: KnockAlert,
+    displayableAlert: DisplayableKnockAlert,
     onKnockAction: (KnockAlert) -> Unit,
     modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.medium
 ) {
+    val alert = displayableAlert.alert
     OutlinedCard(
         modifier = modifier.fillMaxWidth(),
         shape = shape
@@ -407,7 +409,7 @@ internal fun KnockAlertItem(
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
                 Text(
-                    text = "From: ${alert.ownerId}",
+                    text = "From: ${displayableAlert.ownerDisplayName ?: "Unknown"}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 4.dp)
@@ -419,16 +421,21 @@ internal fun KnockAlertItem(
                 )
             }
 
+            val hasKnocked = displayableAlert.hasKnocked
             IconButton(
                 onClick = { onKnockAction(alert) },
+                enabled = !hasKnocked,
                 modifier = Modifier
-                    .clip(MaterialShapes.Cookie9Sided.toShape())
-                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .clip(if (hasKnocked) CircleShape else MaterialShapes.Cookie9Sided.toShape())
+                    .background(
+                        if (hasKnocked) MaterialTheme.colorScheme.surfaceVariant
+                        else MaterialTheme.colorScheme.primaryContainer
+                    )
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Build,
-                    contentDescription = "Knock",
-                    tint = MaterialTheme.colorScheme.primary,
+                    imageVector = if (hasKnocked) Icons.Filled.Check else Icons.Filled.Build,
+                    contentDescription = if (hasKnocked) "Knocked" else "Knock",
+                    tint = if (hasKnocked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
                 )
             }
         }
@@ -488,7 +495,8 @@ fun HomeScreenPreviewWithUserAndAlerts() {
                 content = "Alert from another user, visible in the main feed.",
                 targetTimestamp = now - 100000
             ),
-            ownerDisplayName = "Other User"
+            ownerDisplayName = "Other User",
+            hasKnocked = true
         ),
         DisplayableKnockAlert(
             alert = KnockAlert(
