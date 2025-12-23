@@ -1,5 +1,7 @@
 package com.sujalkumar.knockme.ui.home
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -422,21 +424,28 @@ internal fun KnockAlertItem(
             }
 
             val hasKnocked = displayableAlert.hasKnocked
+            val backgroundColor by animateColorAsState(
+                targetValue = if (hasKnocked) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primaryContainer,
+                label = "BackgroundColor"
+            )
+            val iconColor by animateColorAsState(
+                targetValue = if (hasKnocked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+                label = "IconColor"
+            )
             IconButton(
                 onClick = { onKnockAction(alert) },
                 enabled = !hasKnocked,
                 modifier = Modifier
                     .clip(if (hasKnocked) CircleShape else MaterialShapes.Cookie9Sided.toShape())
-                    .background(
-                        if (hasKnocked) MaterialTheme.colorScheme.surfaceVariant
-                        else MaterialTheme.colorScheme.primaryContainer
-                    )
+                    .background(backgroundColor)
             ) {
-                Icon(
-                    imageVector = if (hasKnocked) Icons.Filled.Check else Icons.Filled.Build,
-                    contentDescription = if (hasKnocked) "Knocked" else "Knock",
-                    tint = if (hasKnocked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
-                )
+                Crossfade(targetState = hasKnocked, label = "IconSwap") { isKnocked ->
+                    Icon(
+                        imageVector = if (isKnocked) Icons.Filled.Check else Icons.Filled.Build,
+                        contentDescription = if (isKnocked) "Knocked" else "Knock",
+                        tint = iconColor
+                    )
+                }
             }
         }
     }

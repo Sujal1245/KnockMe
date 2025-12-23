@@ -1,26 +1,26 @@
 [versions]
-agp = "8.13.0"
-kotlin = "2.2.20"
+agp = "8.13.2"
+kotlin = "2.3.0"
 coreKtx = "1.17.0"
-lifecycleRuntimeKtx = "2.9.4"
-activityCompose = "1.11.0"
-composeBom = "2025.10.00"
-material3 = "1.5.0-alpha06"
+lifecycleRuntimeKtx = "2.10.0"
+activityCompose = "1.12.2"
+composeBom = "2025.12.01"
+material3 = "1.5.0-alpha11"
 materialIcons = "1.7.8"
 
 googleGmsServices = "4.4.4"
-firebaseBom = "34.4.0"
-firebaseUiAuth = "9.0.0"
+firebaseBom = "34.7.0"
+firebaseUiAuth = "9.1.1"
 playServicesAuth = "21.4.0"
 
-nav3Core = "1.0.0-alpha11"
-nav3Lifecycle = "1.0.0-alpha04"
+nav3Core = "1.0.0"
+nav3Lifecycle = "2.10.0"
 
-kotlinSerialization = "2.2.20"
+kotlinSerialization = "2.3.0"
 kotlinxSerializationCore = "1.9.0"
 
 koin = "4.1.1"
-datastoreCore = "1.1.7"
+datastoreCore = "1.2.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
