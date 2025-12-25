@@ -1,15 +1,17 @@
 package com.sujalkumar.knockme.di
 
+import androidx.credentials.CredentialManager
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.DataStoreFactory
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.sujalkumar.knockme.data.datastore.AppUserSerializer
 import com.sujalkumar.knockme.data.datasource.UserDataSource
 import com.sujalkumar.knockme.data.model.AppUser
-import com.sujalkumar.knockme.data.repository.OfflineFirstUserDetailsRepository
-import com.sujalkumar.knockme.data.repository.UserDetailsRepository
+import com.sujalkumar.knockme.data.repository.AuthRepository
 import com.sujalkumar.knockme.data.repository.KnockAlertRepository
+import com.sujalkumar.knockme.data.repository.OtherUsersRepository
+import com.sujalkumar.knockme.data.repository.impl.AuthRepositoryImpl
+import com.sujalkumar.knockme.data.repository.impl.FirestoreOtherUsersRepository
 import com.sujalkumar.knockme.data.repository.impl.KnockAlertRepositoryImpl
 import com.sujalkumar.knockme.ui.addalert.AddKnockAlertViewModel
 import com.sujalkumar.knockme.ui.auth.AuthViewModel
@@ -41,10 +43,12 @@ val appModule = module {
         )
     }
 
+    single { CredentialManager.create(androidContext()) }
     single<FirebaseAuth> { FirebaseAuth.getInstance() }
     single<FirebaseFirestore> { FirebaseFirestore.getInstance() }
 
     singleOf(::UserDataSource)
-    singleOf(::OfflineFirstUserDetailsRepository) { bind<UserDetailsRepository>() }
     singleOf(::KnockAlertRepositoryImpl) { bind<KnockAlertRepository>() }
+    singleOf(::FirestoreOtherUsersRepository) { bind<OtherUsersRepository>() }
+    singleOf(::AuthRepositoryImpl) { bind<AuthRepository>() }
 }

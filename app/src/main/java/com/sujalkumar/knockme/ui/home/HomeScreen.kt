@@ -51,9 +51,11 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.sujalkumar.knockme.common.Resource
 import com.sujalkumar.knockme.data.model.AppUser
 import com.sujalkumar.knockme.data.model.KnockAlert
 import com.sujalkumar.knockme.ui.auth.AuthViewModel
+import com.sujalkumar.knockme.util.TimeUtils
 import org.koin.androidx.compose.koinViewModel
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -86,14 +88,14 @@ fun HomeScreen(
 )
 @Composable
 internal fun HomeScreen(
-    uiState: HomeUiState,
+    uiState: Resource<HomeUiState>,
     onKnockAction: (KnockAlert) -> Unit,
     onSignOut: () -> Unit,
     onNavigateToAddAlert: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val showFab = when (uiState) {
-        is HomeUiState.Success -> uiState.myKnockAlerts.isNotEmpty()
+        is Resource.Success -> uiState.data.myKnockAlerts.isNotEmpty()
         else -> false
     }
 
@@ -126,8 +128,8 @@ internal fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            when (val state = uiState) {
-                is HomeUiState.Loading -> {
+            when (uiState) {
+                is Resource.Loading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -136,25 +138,25 @@ internal fun HomeScreen(
                     }
                 }
 
-                is HomeUiState.Error -> {
+                is Resource.Error -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = state.message,
+                            text = uiState.message,
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }
                 }
 
-                is HomeUiState.Success -> {
-                    if (state.user != null) {
+                is Resource.Success -> {
+                    if (uiState.data.user != null) {
                         HomeScreenSuccessContent(
-                            user = state.user,
-                            myKnockAlerts = state.myKnockAlerts,
-                            feedKnockAlerts = state.feedKnockAlerts,
+                            user = uiState.data.user,
+                            myKnockAlerts = uiState.data.myKnockAlerts,
+                            feedKnockAlerts = uiState.data.feedKnockAlerts,
                             onKnockAction = onKnockAction,
                             onNavigateToAddAlert = onNavigateToAddAlert,
                             modifier = Modifier
@@ -377,7 +379,7 @@ internal fun MyKnockAlertCard(
                 minLines = 2
             )
             Text(
-                text = "Active since: ${alert.targetTimestamp}", // TODO: Format this timestamp
+                text = "Active since: ${TimeUtils.toRelativeTime(alert.targetTimestamp)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -417,7 +419,7 @@ internal fun KnockAlertItem(
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
                 Text(
-                    text = "Active since: ${alert.targetTimestamp}",
+                    text = "Active since: ${TimeUtils.toRelativeTime(alert.targetTimestamp)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -455,10 +457,12 @@ internal fun KnockAlertItem(
 @Composable
 fun HomeScreenPreviewNoUser() {
     HomeScreen(
-        uiState = HomeUiState.Success(
-            user = null,
-            myKnockAlerts = emptyList(),
-            feedKnockAlerts = emptyList()
+        uiState = Resource.Success(
+            HomeUiState(
+                user = null,
+                myKnockAlerts = emptyList(),
+                feedKnockAlerts = emptyList()
+            )
         ),
         onKnockAction = {},
         onNavigateToAddAlert = {},
@@ -518,10 +522,12 @@ fun HomeScreenPreviewWithUserAndAlerts() {
         )
     )
     HomeScreen(
-        uiState = HomeUiState.Success(
-            user = sampleUser,
-            myKnockAlerts = myAlerts,
-            feedKnockAlerts = feedAlerts
+        uiState = Resource.Success(
+            HomeUiState(
+                user = sampleUser,
+                myKnockAlerts = myAlerts,
+                feedKnockAlerts = feedAlerts
+            )
         ),
         onKnockAction = { println("Preview Knock: ${it.id}") },
         onNavigateToAddAlert = {},
@@ -551,10 +557,12 @@ fun HomeScreenPreviewUserNoOwnAlerts() {
         )
     )
     HomeScreen(
-        uiState = HomeUiState.Success(
-            user = sampleUser,
-            myKnockAlerts = emptyList(),
-            feedKnockAlerts = feedAlerts
+        uiState = Resource.Success(
+            HomeUiState(
+                user = sampleUser,
+                myKnockAlerts = emptyList(),
+                feedKnockAlerts = feedAlerts
+            )
         ),
         onKnockAction = { println("Preview Knock: ${it.id}") },
         onNavigateToAddAlert = {},
@@ -566,7 +574,7 @@ fun HomeScreenPreviewUserNoOwnAlerts() {
 @Composable
 fun HomeScreenPreviewError() {
     HomeScreen(
-        uiState = HomeUiState.Error("Preview error message"),
+        uiState = Resource.Error("Preview error message"),
         onKnockAction = {},
         onNavigateToAddAlert = {},
         onSignOut = {}
@@ -577,7 +585,7 @@ fun HomeScreenPreviewError() {
 @Composable
 fun HomeScreenPreviewLoading() {
     HomeScreen(
-        uiState = HomeUiState.Loading,
+        uiState = Resource.Loading,
         onKnockAction = {},
         onNavigateToAddAlert = {},
         onSignOut = {}

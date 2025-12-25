@@ -1,6 +1,7 @@
 package com.sujalkumar.knockme.ui.onboarding
 
 import android.app.Activity
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -22,7 +23,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -35,17 +35,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.sujalkumar.knockme.R
-import com.sujalkumar.knockme.ui.auth.AuthState
 import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import org.koin.androidx.compose.koinViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -56,57 +56,28 @@ fun OnboardingScreen(
 ) {
     val authState by viewModel.authState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-
-    val emailSignInLauncher = rememberLauncherForActivityResult(
-        contract = FirebaseAuthUIActivityResultContract(),
-    ) { result ->
-        viewModel.processEmailSignInResult(result, result.resultCode)
-    }
+    val coroutineScope = rememberCoroutineScope()
 
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            viewModel.processGoogleSignInResult(result.data)
-        } else {
-            if (result.data == null) {
-                viewModel.resetAuthState()
+            coroutineScope.launch {
+                viewModel.onSignInResult(result.data ?: Intent())
             }
         }
     }
 
-    LaunchedEffect(authState) {
-        when (val state = authState) {
-            is AuthState.EmailSignInIntentReady -> {
-                emailSignInLauncher.launch(state.intent)
-                viewModel.resetAuthState()
-            }
-            is AuthState.GoogleSignInIntentReady -> {
-                googleSignInLauncher.launch(state.intent)
-                viewModel.resetAuthState()
-            }
-            is AuthState.AuthenticationSuccess -> {
-                onNavigateToHome()
-            }
-            is AuthState.EmailSignInError -> {
-                val errorMessage = state.result.idpResponse?.error?.message ?: "Email sign-in failed"
-                snackbarHostState.showSnackbar(message = errorMessage, duration = SnackbarDuration.Long)
-                viewModel.resetAuthState()
-            }
-            is AuthState.GoogleSignInError -> {
-                val errorMessage = state.apiException?.localizedMessage ?: "Google sign-in failed"
-                snackbarHostState.showSnackbar(message = "Google Sign-In Error: $errorMessage", duration = SnackbarDuration.Long)
-                viewModel.resetAuthState()
-            }
-            is AuthState.FirebaseAuthenticationError -> {
-                val errorMessage = state.exception.localizedMessage ?: "Authentication process failed"
-                snackbarHostState.showSnackbar(message = "Error: $errorMessage", duration = SnackbarDuration.Long)
-                viewModel.resetAuthState()
-            }
-            is AuthState.SignOutSuccess -> {
-                viewModel.resetAuthState()
-            }
-            else -> { /* Other states handled by UI visibility */ }
+    LaunchedEffect(authState.isSignInSuccessful) {
+        if (authState.isSignInSuccessful) {
+            onNavigateToHome()
+        }
+    }
+
+    LaunchedEffect(authState.signInError) {
+        authState.signInError?.let {
+            snackbarHostState.showSnackbar(message = it, duration = SnackbarDuration.Long)
+            viewModel.resetState()
         }
     }
 
@@ -123,24 +94,8 @@ fun OnboardingScreen(
                 .padding(horizontal = 24.dp, vertical = 32.dp),
             contentAlignment = Alignment.Center
         ) {
-
             AnimatedVisibility(
-                visible = authState == AuthState.ProcessingSignIn || authState == AuthState.AuthenticationSuccess,
-                modifier = Modifier.align(Alignment.Center)
-            ) {
-                LoadingIndicator()
-            }
-
-            AnimatedVisibility(
-                visible = authState == AuthState.Idle ||
-                        authState is AuthState.EmailSignInIntentReady ||
-                        authState is AuthState.GoogleSignInIntentReady ||
-                        authState is AuthState.EmailSignInError ||
-                        authState is AuthState.GoogleSignInError ||
-                        authState is AuthState.FirebaseAuthenticationError ||
-                        authState == AuthState.SigningOut ||
-                        authState == AuthState.SignOutError ||
-                        authState == AuthState.SignOutSuccess,
+                visible = !authState.isSignInSuccessful,
                 modifier = Modifier.align(Alignment.Center)
             ) {
                 Column(
@@ -173,7 +128,7 @@ fun OnboardingScreen(
                     Spacer(modifier = Modifier.height(48.dp))
 
                     Button(
-                        onClick = { viewModel.createGoogleSignInIntent() },
+                        onClick = { googleSignInLauncher.launch(Intent()) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
@@ -194,7 +149,7 @@ fun OnboardingScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedButton(
-                        onClick = { viewModel.createEmailSignInIntent() },
+                        onClick = { /* TODO: Implement Email Sign In */ },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),

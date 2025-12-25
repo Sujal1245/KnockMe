@@ -7,11 +7,11 @@ activityCompose = "1.12.2"
 composeBom = "2025.12.01"
 material3 = "1.5.0-alpha11"
 materialIcons = "1.7.8"
+credentialManager = "1.5.0"
+googleId = "1.1.1"
 
 googleGmsServices = "4.4.4"
 firebaseBom = "34.7.0"
-firebaseUiAuth = "9.1.1"
-playServicesAuth = "21.4.0"
 
 nav3Core = "1.0.0"
 nav3Lifecycle = "2.10.0"
@@ -34,12 +34,13 @@ androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "u
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core", version.ref = "materialIcons" } # Added
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "materialIcons" } # Added
+androidx-credential-manager = { group = "androidx.credentials", name = "credentials", version.ref = "credentialManager" }
+google-id = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleId" }
 
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore" }
-firebase-ui-auth = { group = "com.firebaseui", name = "firebase-ui-auth", version.ref = "firebaseUiAuth" }
-google-play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth"}
 
 nav3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3Core" }
 nav3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3Core" }

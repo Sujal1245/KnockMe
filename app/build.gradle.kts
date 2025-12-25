@@ -66,8 +66,9 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.analytics)
-    implementation(libs.firebase.ui.auth)
-    implementation(libs.google.play.services.auth)
+    implementation(libs.firebase.auth)
+    implementation(libs.androidx.credential.manager)
+    implementation(libs.google.id)
 
     // Navigation
     implementation(libs.nav3.runtime)

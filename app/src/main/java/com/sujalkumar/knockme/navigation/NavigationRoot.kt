@@ -3,28 +3,17 @@ package com.sujalkumar.knockme.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
-import androidx.navigation3.runtime.NavEntry
-import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.sujalkumar.knockme.ui.addalert.AddKnockAlertScreen
 import com.sujalkumar.knockme.ui.home.HomeScreen
 import com.sujalkumar.knockme.ui.onboarding.OnboardingScreen
-import kotlinx.serialization.Serializable
-
-@Serializable
-data object OnboardingNavKey : NavKey
-
-@Serializable
-data object HomeNavKey : NavKey
-
-@Serializable
-data object AddKnockAlertNavKey : NavKey
 
 @Composable
 fun NavigationRoot(modifier: Modifier = Modifier) {
-    val backStack = rememberNavBackStack(OnboardingNavKey)
+    val backStack = rememberNavBackStack(Route.Onboarding)
     NavDisplay(
         modifier = modifier,
         backStack = backStack,
@@ -32,44 +21,73 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
             rememberSaveableStateHolderNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator()
         ),
-        entryProvider = { key ->
-            when (key) {
-                is OnboardingNavKey -> {
-                    NavEntry(key = key) {
-                        OnboardingScreen(
-                            onNavigateToHome = {
-                                backStack[0] = HomeNavKey
-                            }
-                        )
+        entryProvider = entryProvider {
+            entry<Route.Onboarding> {
+                OnboardingScreen(
+                    onNavigateToHome = {
+                        backStack[0] = Route.Home
                     }
-                }
-
-                is HomeNavKey -> {
-                    NavEntry(key = key) {
-                        HomeScreen(
-                            onNavigateToAddAlert = {
-                                backStack.add(AddKnockAlertNavKey)
-                            },
-                            onLogout = {
-                                // Will fix this later.
-//                                backStack[0] = OnboardingNavKey
-                            }
-                        )
-                    }
-                }
-
-                is AddKnockAlertNavKey -> {
-                    NavEntry(key = key) {
-                        AddKnockAlertScreen(
-                            onNavigateUp = {
-                                backStack.remove(AddKnockAlertNavKey)
-                            }
-                        )
-                    }
-                }
-
-                else -> throw RuntimeException("Invalid NavKey: $key")
+                )
             }
-        }
+
+            entry<Route.Home> {
+                HomeScreen(
+                    onNavigateToAddAlert = {
+                        backStack.add(Route.AddKnockAlert)
+                    },
+                    onLogout = {
+                        // Will fix this later.
+//                                backStack[0] = OnboardingNavKey
+                    }
+                )
+            }
+
+            entry<Route.AddKnockAlert> {
+                AddKnockAlertScreen(
+                    onNavigateUp = {
+                        backStack.remove(Route.AddKnockAlert)
+                    }
+                )
+            }
+        },
+//        entryProvider = { key ->
+//            when (key) {
+//                is Route.Onboarding -> {
+//                    NavEntry(key = key) {
+//                        OnboardingScreen(
+//                            onNavigateToHome = {
+//                                backStack[0] = Route.Home
+//                            }
+//                        )
+//                    }
+//                }
+//
+//                is Route.Home -> {
+//                    NavEntry(key = key) {
+//                        HomeScreen(
+//                            onNavigateToAddAlert = {
+//                                backStack.add(Route.AddKnockAlert)
+//                            },
+//                            onLogout = {
+//                                // Will fix this later.
+////                                backStack[0] = OnboardingNavKey
+//                            }
+//                        )
+//                    }
+//                }
+//
+//                is Route.AddKnockAlert -> {
+//                    NavEntry(key = key) {
+//                        AddKnockAlertScreen(
+//                            onNavigateUp = {
+//                                backStack.remove(Route.AddKnockAlert)
+//                            }
+//                        )
+//                    }
+//                }
+//
+//                else -> error("Unknown NavKey: $key")
+//            }
+//        }
     )
 }

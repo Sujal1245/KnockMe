@@ -2,125 +2,126 @@ package com.sujalkumar.knockme.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sujalkumar.knockme.data.model.AppUser
+import com.sujalkumar.knockme.common.Resource
 import com.sujalkumar.knockme.data.model.KnockAlert
 import com.sujalkumar.knockme.data.repository.KnockAlertRepository
+import com.sujalkumar.knockme.data.repository.OtherUsersRepository
 import com.sujalkumar.knockme.data.repository.UserDetailsRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class HomeViewModel(
-    private val userDetailsRepository: UserDetailsRepository,
-    private val knockAlertRepository: KnockAlertRepository
+    userDetailsRepository: UserDetailsRepository,
+    private val knockAlertRepository: KnockAlertRepository,
+    private val otherUsersRepository: OtherUsersRepository
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<Resource<HomeUiState>>(Resource.Loading)
+    val uiState: StateFlow<Resource<HomeUiState>> = _uiState.asStateFlow()
+
+    private val _oneTimeEvent = Channel<HomeOneTimeEvent>()
+    val oneTimeEvent = _oneTimeEvent.receiveAsFlow()
+
+    private val user = userDetailsRepository.user.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000L),
+        initialValue = null,
+    )
 
     init {
-        val userFlow: Flow<AppUser?> = userDetailsRepository.user
         val activeAlertsFlow: Flow<List<KnockAlert>> = knockAlertRepository.getActiveKnockAlerts()
 
-        combine(userFlow, activeAlertsFlow) { user, activeAlerts ->
-            val myKnockAlerts = mutableListOf<KnockAlert>()
-            val feedKnockAlerts = mutableListOf<DisplayableKnockAlert>()
-
-            if (user != null) {
-                activeAlerts.forEach { alert ->
-                    if (alert.ownerId == user.uid) {
-                        myKnockAlerts.add(alert)
-                    } else {
-                        val hasKnocked = user.uid in alert.knockedByUids
-                        feedKnockAlerts.add(
-                            DisplayableKnockAlert(
-                                alert = alert,
-                                ownerDisplayName = null, // This can be enhanced later
-                                hasKnocked = hasKnocked
-                            )
-                        )
-                    }
-                }
+        combine(user, activeAlertsFlow) { user, activeAlerts ->
+            val (myKnockAlerts, feedKnockAlertsSource) = if (user != null) {
+                activeAlerts.partition { it.ownerId == user.uid }
             } else {
-                activeAlerts.forEach {
-                    feedKnockAlerts.add(
-                        DisplayableKnockAlert(
-                            alert = it,
-                            ownerDisplayName = null, // This can be enhanced later
-                            hasKnocked = false
-                        )
+                emptyList<KnockAlert>() to activeAlerts
+            }
+
+            val deferredFeedKnockAlerts = feedKnockAlertsSource.map { alert ->
+                viewModelScope.async { // Asynchronously fetch owner display name
+                    val owner = otherUsersRepository.getUserById(alert.ownerId)
+                    val hasKnocked = user?.uid in alert.knockedByUids
+                    DisplayableKnockAlert(
+                        alert = alert,
+                        ownerDisplayName = owner?.displayName,
+                        hasKnocked = hasKnocked
                     )
                 }
             }
-            HomeUiState.Success(
+
+            HomeUiState(
                 user = user,
                 myKnockAlerts = myKnockAlerts,
-                feedKnockAlerts = feedKnockAlerts
+                feedKnockAlerts = deferredFeedKnockAlerts.awaitAll() // Wait for all fetches to complete
             )
         }
             .catch { e ->
-                _uiState.value = HomeUiState.Error(e.message ?: "An error occurred loading home data")
+                _uiState.value = Resource.Error(e.message ?: "An error occurred loading home data", e)
             }
             .onEach { successState ->
-                _uiState.value = successState
+                _uiState.value = Resource.Success(successState)
             }
             .launchIn(viewModelScope)
     }
 
+
     fun knockOnAlert(alertId: String) {
         viewModelScope.launch {
-            val currentUser = userDetailsRepository.user.first()
+            val currentUser = user.value
             if (currentUser == null) {
-                _uiState.value = HomeUiState.Error("You must be logged in to knock.")
+                _oneTimeEvent.send(HomeOneTimeEvent.UserNotLoggedIn)
                 return@launch
             }
 
             val currentState = _uiState.value
-            if (currentState is HomeUiState.Success) {
-                val alertIndex = currentState.feedKnockAlerts.indexOfFirst { it.alert.id == alertId }
+            if (currentState is Resource.Success) {
+                val currentFeed = currentState.data.feedKnockAlerts
+                val alertIndex = currentFeed.indexOfFirst { it.alert.id == alertId }
 
                 if (alertIndex == -1) {
-                    _uiState.value = HomeUiState.Error("Alert not found.")
-                    return@launch
+                    return@launch // Alert not found
                 }
 
-                val displayableAlert = currentState.feedKnockAlerts[alertIndex]
+                val displayableAlert = currentFeed[alertIndex]
 
                 if (displayableAlert.alert.ownerId == currentUser.uid) {
-                    _uiState.value = HomeUiState.Error("You cannot knock on your own alert.")
-                    return@launch
+                    return@launch // User cannot knock on their own alert
                 }
 
                 // Optimistically update UI
-                val updatedFeedKnockAlerts = currentState.feedKnockAlerts.toMutableList()
-                updatedFeedKnockAlerts[alertIndex] = displayableAlert.copy(hasKnocked = true)
-                _uiState.value = currentState.copy(feedKnockAlerts = updatedFeedKnockAlerts)
+                val updatedFeed = currentFeed.toMutableList().apply {
+                    this[alertIndex] = displayableAlert.copy(hasKnocked = true)
+                }
+                _uiState.value = Resource.Success(currentState.data.copy(feedKnockAlerts = updatedFeed))
 
+                // Perform the knock
                 val result = knockAlertRepository.knockOnAlert(alertId = alertId, userId = currentUser.uid)
+
+                // Revert UI on failure
                 result.onFailure {
-                    // Revert UI change on failure
-                    updatedFeedKnockAlerts[alertIndex] = displayableAlert
-                    _uiState.value = currentState.copy(feedKnockAlerts = updatedFeedKnockAlerts)
-                    _uiState.value = HomeUiState.Error("Knock failed: ${it.message}")
+                    val revertedFeed = currentFeed.toMutableList().apply {
+                        this[alertIndex] = displayableAlert
+                    }
+                    _uiState.value = Resource.Success(currentState.data.copy(feedKnockAlerts = revertedFeed))
                 }
             }
         }
     }
 }
 
-sealed interface HomeUiState {
-    data class Success(
-        val user: AppUser?,
-        val myKnockAlerts: List<KnockAlert> = emptyList(),
-        val feedKnockAlerts: List<DisplayableKnockAlert> = emptyList()
-    ) : HomeUiState
-
-    data class Error(val message: String = "An error occurred.") : HomeUiState
-    data object Loading : HomeUiState
+sealed interface HomeOneTimeEvent {
+    data object UserNotLoggedIn : HomeOneTimeEvent
 }
