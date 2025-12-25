@@ -1,9 +1,5 @@
 package com.sujalkumar.knockme.ui.onboarding
 
-import android.app.Activity
-import android.content.Intent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -35,7 +31,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -45,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import com.sujalkumar.knockme.R
 import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import org.koin.androidx.compose.koinViewModel
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -56,17 +50,6 @@ fun OnboardingScreen(
 ) {
     val authState by viewModel.authState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-
-    val googleSignInLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            coroutineScope.launch {
-                viewModel.onSignInResult(result.data ?: Intent())
-            }
-        }
-    }
 
     LaunchedEffect(authState.isSignInSuccessful) {
         if (authState.isSignInSuccessful) {
@@ -128,7 +111,7 @@ fun OnboardingScreen(
                     Spacer(modifier = Modifier.height(48.dp))
 
                     Button(
-                        onClick = { googleSignInLauncher.launch(Intent()) },
+                        onClick = { viewModel.signInWithGoogle() },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),

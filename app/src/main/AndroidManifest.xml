@@ -21,21 +21,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- FirebaseUI Auth activities -->
-        <activity
-            android:name="com.firebase.ui.auth.ui.idp.AuthMethodPickerActivity"
-            android:theme="@style/Theme.FirebaseUI.Auth"
-            tools:replace="android:theme"
-            tools:ignore="Instantiatable" />
-        <activity
-            android:name="com.firebase.ui.auth.ui.email.EmailActivity"
-            android:theme="@style/Theme.FirebaseUI.Auth"
-            tools:replace="android:theme"
-            tools:ignore="Instantiatable" />
-        <!-- If you use other specific FirebaseUI activities like GoogleSignInActivity, etc. 
-             and encounter similar theme issues, you might need to add them here as well. -->
-
     </application>
 
 </manifest>

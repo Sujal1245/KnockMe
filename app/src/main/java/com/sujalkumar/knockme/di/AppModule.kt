@@ -11,6 +11,8 @@ import com.sujalkumar.knockme.data.model.AppUser
 import com.sujalkumar.knockme.data.repository.AuthRepository
 import com.sujalkumar.knockme.data.repository.KnockAlertRepository
 import com.sujalkumar.knockme.data.repository.OtherUsersRepository
+import com.sujalkumar.knockme.data.repository.UserDetailsRepository
+import com.sujalkumar.knockme.data.repository.UserDetailsRepositoryImpl
 import com.sujalkumar.knockme.data.repository.impl.AuthRepositoryImpl
 import com.sujalkumar.knockme.data.repository.impl.FirestoreOtherUsersRepository
 import com.sujalkumar.knockme.data.repository.impl.KnockAlertRepositoryImpl
@@ -34,7 +36,7 @@ val appModule = module {
     single<DataStore<AppUser?>> {
         DataStoreFactory.create(
             serializer = AppUserSerializer,
-            produceFile = { 
+            produceFile = {
                 val dir = File(androidContext().filesDir, "datastore")
                 if (!dir.exists()) {
                     dir.mkdirs()
@@ -49,6 +51,7 @@ val appModule = module {
     single<FirebaseFirestore> { FirebaseFirestore.getInstance() }
 
     singleOf(::UserDataSource)
+    singleOf(::UserDetailsRepositoryImpl) { bind<UserDetailsRepository>() }
     singleOf(::KnockAlertRepositoryImpl) { bind<KnockAlertRepository>() }
     singleOf(::FirestoreOtherUsersRepository) { bind<OtherUsersRepository>() }
     singleOf(::AuthRepositoryImpl) { bind<AuthRepository>() }

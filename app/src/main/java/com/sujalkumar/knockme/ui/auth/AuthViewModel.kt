@@ -1,9 +1,9 @@
 package com.sujalkumar.knockme.ui.auth
 
-import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sujalkumar.knockme.data.repository.AuthRepository
+import com.sujalkumar.knockme.data.repository.UserDetailsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val userDetailsRepository: UserDetailsRepository
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow(AuthState())
@@ -24,15 +25,22 @@ class AuthViewModel(
         }
     }
 
-    fun onSignInResult(intent: Intent) {
+    fun signInWithGoogle() {
         viewModelScope.launch {
-            val result = authRepository.googleSignIn(intent)
+            val result = authRepository.googleSignIn()
+
+            result.data?.let {
+                userDetailsRepository.setUserDetails(it)
+            }
+
             _authState.update {
                 it.copy(
                     isSignInSuccessful = result.data != null,
                     signInError = result.errorMessage
                 )
             }
+
+
         }
     }
 

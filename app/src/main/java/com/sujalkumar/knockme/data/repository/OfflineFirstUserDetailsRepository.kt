@@ -5,7 +5,7 @@ import com.sujalkumar.knockme.data.datasource.UserDataSource
 import com.sujalkumar.knockme.data.model.AppUser
 import kotlinx.coroutines.flow.Flow
 
-class OfflineFirstUserDetailsRepository(
+class UserDetailsRepositoryImpl(
     private val userDataSource: UserDataSource
 ) : UserDetailsRepository {
 

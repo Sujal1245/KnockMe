@@ -1,7 +1,9 @@
 package com.sujalkumar.knockme.data.model
 
+import com.google.firebase.auth.FirebaseUser
+
 data class SignInResult(
-    val data: UserData?,
+    val data: FirebaseUser?,
     val errorMessage: String?
 )
 
