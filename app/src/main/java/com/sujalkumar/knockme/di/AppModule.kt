@@ -3,6 +3,7 @@ package com.sujalkumar.knockme.di
 import androidx.credentials.CredentialManager
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.DataStoreFactory
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.sujalkumar.knockme.data.datastore.AppUserSerializer
 import com.sujalkumar.knockme.data.datasource.UserDataSource
