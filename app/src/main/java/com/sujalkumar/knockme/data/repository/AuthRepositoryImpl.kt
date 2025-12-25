@@ -1,4 +1,4 @@
-package com.sujalkumar.knockme.data.repository.impl
+package com.sujalkumar.knockme.data.repository
 
 import android.content.Context
 import androidx.credentials.CredentialManager
@@ -12,8 +12,7 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.sujalkumar.knockme.R
 import com.sujalkumar.knockme.data.model.SignInResult
-import com.sujalkumar.knockme.data.model.UserData
-import com.sujalkumar.knockme.data.repository.AuthRepository
+import com.sujalkumar.knockme.domain.repository.AuthRepository
 import kotlinx.coroutines.tasks.await
 
 class AuthRepositoryImpl(
@@ -42,7 +41,7 @@ class AuthRepositoryImpl(
             )
 
             val credential = result.credential
-            val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+            val googleIdTokenCredential = GoogleIdTokenCredential.Companion.createFrom(credential.data)
             val googleIdToken = googleIdTokenCredential.idToken
 
             val firebaseCredential = GoogleAuthProvider.getCredential(googleIdToken, null)

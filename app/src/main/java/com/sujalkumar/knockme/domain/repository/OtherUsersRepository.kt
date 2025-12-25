@@ -1,4 +1,4 @@
-package com.sujalkumar.knockme.data.repository
+package com.sujalkumar.knockme.domain.repository
 
 import com.sujalkumar.knockme.data.model.AppUser
 

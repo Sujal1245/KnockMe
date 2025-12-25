@@ -2,8 +2,8 @@ package com.sujalkumar.knockme.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sujalkumar.knockme.data.repository.AuthRepository
-import com.sujalkumar.knockme.data.repository.UserDetailsRepository
+import com.sujalkumar.knockme.domain.repository.AuthRepository
+import com.sujalkumar.knockme.domain.repository.UserDetailsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

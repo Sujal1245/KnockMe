@@ -1,11 +1,11 @@
-package com.sujalkumar.knockme.data.repository.impl
+package com.sujalkumar.knockme.data.repository
 
 import com.google.firebase.firestore.FirebaseFirestore
 import com.sujalkumar.knockme.data.model.AppUser
-import com.sujalkumar.knockme.data.repository.OtherUsersRepository
+import com.sujalkumar.knockme.domain.repository.OtherUsersRepository
 import kotlinx.coroutines.tasks.await
 
-class FirestoreOtherUsersRepository(
+class OtherUsersRepositoryImpl(
     private val firestore: FirebaseFirestore
 ) : OtherUsersRepository {
 

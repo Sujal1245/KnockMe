@@ -1,11 +1,11 @@
-package com.sujalkumar.knockme.data.repository.impl
+package com.sujalkumar.knockme.data.repository
 
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.toObject
 import com.sujalkumar.knockme.data.model.KnockAlert
-import com.sujalkumar.knockme.data.repository.KnockAlertRepository
+import com.sujalkumar.knockme.domain.repository.KnockAlertRepository
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow

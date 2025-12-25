@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sujalkumar.knockme.common.Resource
 import com.sujalkumar.knockme.data.model.KnockAlert
-import com.sujalkumar.knockme.data.repository.KnockAlertRepository
-import com.sujalkumar.knockme.data.repository.OtherUsersRepository
-import com.sujalkumar.knockme.data.repository.UserDetailsRepository
+import com.sujalkumar.knockme.domain.repository.KnockAlertRepository
+import com.sujalkumar.knockme.domain.repository.OtherUsersRepository
+import com.sujalkumar.knockme.domain.repository.UserDetailsRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel

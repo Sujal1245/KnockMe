@@ -3,6 +3,7 @@ package com.sujalkumar.knockme.data.repository
 import com.google.firebase.auth.FirebaseUser
 import com.sujalkumar.knockme.data.datasource.UserDataSource
 import com.sujalkumar.knockme.data.model.AppUser
+import com.sujalkumar.knockme.domain.repository.UserDetailsRepository
 import kotlinx.coroutines.flow.Flow
 
 class UserDetailsRepositoryImpl(
