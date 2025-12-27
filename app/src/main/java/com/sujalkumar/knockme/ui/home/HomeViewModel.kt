@@ -99,7 +99,4 @@ class HomeViewModel(
         }
     }
 
-    fun onLogoutRequested() {
-        // UI should directly call AuthViewModel / AuthRepository
-    }
 }

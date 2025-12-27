@@ -6,6 +6,7 @@ import com.sujalkumar.knockme.data.model.AppUser
 import com.sujalkumar.knockme.domain.model.User
 import com.sujalkumar.knockme.domain.repository.OtherUsersRepository
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.CancellationException
 
 class OtherUsersRepositoryImpl(
     private val firestore: FirebaseFirestore
@@ -15,6 +16,8 @@ class OtherUsersRepositoryImpl(
         return try {
             val document = firestore.collection("users").document(userId).get().await()
             document.toObject(AppUser::class.java)?.toUser()
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {
             null
         }
