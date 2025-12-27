@@ -2,8 +2,7 @@ package com.sujalkumar.knockme.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sujalkumar.knockme.domain.model.SignInResult
-import com.sujalkumar.knockme.domain.model.User
+import com.sujalkumar.knockme.domain.model.AuthResult
 import com.sujalkumar.knockme.domain.repository.AuthRepository
 import com.sujalkumar.knockme.domain.repository.UserDetailsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,18 +22,18 @@ class AuthViewModel(
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     init {
-        checkSignedInUser()
+        observeAuthState()
     }
 
-    private fun checkSignedInUser() {
+    private fun observeAuthState() {
         viewModelScope.launch {
-            val user = authRepository.getSignedInUser()
-            _authState.update {
-                it.copy(
-                    isCheckingSession = false,
-                    isSignedIn = user != null,
-                    error = null
-                )
+            authRepository.currentUser.collect { user ->
+                _authState.update {
+                    it.copy(
+                        isCheckingSession = false,
+                        isSignedIn = user != null
+                    )
+                }
             }
         }
     }
@@ -48,12 +47,12 @@ class AuthViewModel(
                 )
             }
 
-            when (val result = authRepository.googleSignIn()) {
-                is SignInResult.Success -> {
+            when (val result = authRepository.signInWithGoogle()) {
+                is AuthResult.Success -> {
                     handleSuccessfulSignIn(result.user)
                 }
 
-                is SignInResult.Failure -> {
+                is AuthResult.Failure -> {
                     _authState.update {
                         it.copy(
                             isSigningIn = false,
@@ -66,7 +65,7 @@ class AuthViewModel(
         }
     }
 
-    private suspend fun handleSuccessfulSignIn(user: User) {
+    private suspend fun handleSuccessfulSignIn(user: com.sujalkumar.knockme.domain.model.User) {
         userDetailsRepository.setUserDetails(user)
         _authState.update {
             it.copy(
@@ -84,9 +83,6 @@ class AuthViewModel(
     fun signOut() {
         viewModelScope.launch {
             authRepository.signOut()
-            _authState.update {
-                AuthState(isSignedIn = false)
-            }
         }
     }
 }

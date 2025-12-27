@@ -1,10 +1,11 @@
 package com.sujalkumar.knockme.domain.repository
 
-import com.sujalkumar.knockme.domain.model.SignInResult
+import com.sujalkumar.knockme.domain.model.AuthResult
 import com.sujalkumar.knockme.domain.model.User
+import kotlinx.coroutines.flow.Flow
 
 interface AuthRepository {
-    fun getSignedInUser(): User?
-    suspend fun googleSignIn(): SignInResult
+    val currentUser: Flow<User?>
+    suspend fun signInWithGoogle(): AuthResult
     suspend fun signOut()
 }

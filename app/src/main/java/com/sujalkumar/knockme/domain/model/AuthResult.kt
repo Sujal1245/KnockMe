@@ -1,11 +1,11 @@
 package com.sujalkumar.knockme.domain.model
 
-sealed class SignInResult {
+sealed interface AuthResult {
     data class Success(
         val user: User
-    ) : SignInResult()
+    ) : AuthResult
 
     data class Failure(
         val error: AuthError
-    ) : SignInResult()
+    ) : AuthResult
 }
