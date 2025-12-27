@@ -36,8 +36,7 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                         backStack.add(Route.AddKnockAlert)
                     },
                     onLogout = {
-                        // Will fix this later.
-//                                backStack[0] = OnboardingNavKey
+                        backStack[0] = Route.Onboarding
                     }
                 )
             }

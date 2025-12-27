@@ -3,18 +3,17 @@ package com.sujalkumar.knockme.ui.addalert
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sujalkumar.knockme.domain.model.KnockAlert
+import com.sujalkumar.knockme.domain.model.KnockAlertError
+import com.sujalkumar.knockme.domain.model.KnockAlertResult
 import com.sujalkumar.knockme.domain.repository.KnockAlertRepository
-import com.sujalkumar.knockme.domain.repository.UserDetailsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.time.Instant
 
 class AddKnockAlertViewModel(
-    private val knockAlertRepository: KnockAlertRepository,
-    private val userDetailsRepository: UserDetailsRepository
+    private val knockAlertRepository: KnockAlertRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AddKnockAlertUiState>(AddKnockAlertUiState.Idle)
@@ -37,13 +36,6 @@ class AddKnockAlertViewModel(
     fun addKnockAlert() {
         viewModelScope.launch {
             _uiState.value = AddKnockAlertUiState.Loading
-            // Get current user from UserDetailsRepository
-            val currentUser = userDetailsRepository.user.first()
-
-            if (currentUser == null) {
-                _uiState.value = AddKnockAlertUiState.Error("User not logged in.")
-                return@launch
-            }
 
             if (_alertContent.value.isBlank()) {
                 _uiState.value = AddKnockAlertUiState.Error("Alert content cannot be empty.")
@@ -58,17 +50,30 @@ class AddKnockAlertViewModel(
 
             val knockAlert = KnockAlert(
                 id = "",
-                ownerId = currentUser.uid,
+                ownerId = "",
                 content = _alertContent.value,
                 targetTime = targetTime,
                 knockedByUserIds = emptyList()
             )
 
-            val result = knockAlertRepository.addKnockAlert(knockAlert)
-            _uiState.value = result.fold(
-                onSuccess = { AddKnockAlertUiState.Success },
-                onFailure = { AddKnockAlertUiState.Error(it.message ?: "Failed to add alert.") }
-            )
+            when (val result = knockAlertRepository.addKnockAlert(knockAlert)) {
+                is KnockAlertResult.Success -> {
+                    _uiState.value = AddKnockAlertUiState.Success
+                }
+
+                is KnockAlertResult.Failure -> {
+                    _uiState.value = AddKnockAlertUiState.Error(
+                        message = when (result.error) {
+                            KnockAlertError.NotAuthenticated ->
+                                "You must be signed in to create an alert."
+                            KnockAlertError.Network ->
+                                "Network error. Please try again."
+                            else ->
+                                "Failed to add alert."
+                        }
+                    )
+                }
+            }
         }
     }
 

@@ -76,28 +76,13 @@ fun HomeScreen(
     val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(Unit) {
-        homeViewModel.oneTimeEvent.collectLatest { event ->
-            when (event) {
-                HomeOneTimeEvent.UserNotLoggedIn -> {
-                    snackbarHostState.showSnackbar(
-                        message = "You must be logged in to perform this action."
-                    )
-                }
-                HomeOneTimeEvent.LoggedOut -> {
-                    authViewModel.signOut()
-                    onLogout()
-                }
-            }
-        }
-    }
-
     HomeScreen(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
         onKnockAction = { alert -> homeViewModel.knockOnAlert(alert.id) },
         onSignOut = {
-            homeViewModel.onLogoutRequested()
+            authViewModel.signOut()
+            onLogout()
         },
         onNavigateToAddAlert = onNavigateToAddAlert,
         modifier = modifier
