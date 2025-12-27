@@ -1,10 +1,10 @@
 package com.sujalkumar.knockme.domain.repository
 
-import com.google.firebase.auth.FirebaseUser
-import com.sujalkumar.knockme.data.model.SignInResult
+import com.sujalkumar.knockme.domain.model.SignInResult
+import com.sujalkumar.knockme.domain.model.User
 
 interface AuthRepository {
-    fun getSignedInUser(): FirebaseUser?
+    fun getSignedInUser(): User?
     suspend fun googleSignIn(): SignInResult
     suspend fun signOut()
 }

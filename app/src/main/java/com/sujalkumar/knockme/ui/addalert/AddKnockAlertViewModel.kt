@@ -2,7 +2,7 @@ package com.sujalkumar.knockme.ui.addalert
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sujalkumar.knockme.data.model.KnockAlert
+import com.sujalkumar.knockme.domain.model.KnockAlert
 import com.sujalkumar.knockme.domain.repository.KnockAlertRepository
 import com.sujalkumar.knockme.domain.repository.UserDetailsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlin.time.Instant
 
 class AddKnockAlertViewModel(
     private val knockAlertRepository: KnockAlertRepository,
@@ -22,22 +23,22 @@ class AddKnockAlertViewModel(
     private val _alertContent = MutableStateFlow("")
     val alertContent: StateFlow<String> = _alertContent.asStateFlow()
 
-    private val _targetTimestamp = MutableStateFlow(0L)
-    val targetTimestamp: StateFlow<Long> = _targetTimestamp.asStateFlow()
+    private val _targetTime = MutableStateFlow<Instant?>(null)
+    val targetTime: StateFlow<Instant?> = _targetTime.asStateFlow()
 
     fun onAlertContentChanged(content: String) {
         _alertContent.value = content
     }
 
-    fun onTargetTimestampChanged(timestamp: Long) {
-        _targetTimestamp.value = timestamp
+    fun onTargetTimeChanged(timeMillis: Long) {
+        _targetTime.value = Instant.fromEpochMilliseconds(timeMillis)
     }
 
     fun addKnockAlert() {
         viewModelScope.launch {
             _uiState.value = AddKnockAlertUiState.Loading
             // Get current user from UserDetailsRepository
-            val currentUser = userDetailsRepository.user.first() 
+            val currentUser = userDetailsRepository.user.first()
 
             if (currentUser == null) {
                 _uiState.value = AddKnockAlertUiState.Error("User not logged in.")
@@ -49,15 +50,18 @@ class AddKnockAlertViewModel(
                 return@launch
             }
 
-            if (_targetTimestamp.value <= System.currentTimeMillis()) {
+            val targetTime = _targetTime.value
+            if (targetTime == null || targetTime.toEpochMilliseconds() <= System.currentTimeMillis()) {
                 _uiState.value = AddKnockAlertUiState.Error("Target time must be in the future.")
                 return@launch
             }
 
             val knockAlert = KnockAlert(
+                id = "",
                 ownerId = currentUser.uid,
                 content = _alertContent.value,
-                targetTimestamp = _targetTimestamp.value
+                targetTime = targetTime,
+                knockedByUserIds = emptyList()
             )
 
             val result = knockAlertRepository.addKnockAlert(knockAlert)
@@ -67,11 +71,11 @@ class AddKnockAlertViewModel(
             )
         }
     }
-    
+
     fun resetState() {
         _uiState.value = AddKnockAlertUiState.Idle
         _alertContent.value = ""
-        _targetTimestamp.value = 0L
+        _targetTime.value = null
     }
 }
 

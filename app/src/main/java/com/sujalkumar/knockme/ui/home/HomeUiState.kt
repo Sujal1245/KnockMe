@@ -1,10 +1,10 @@
 package com.sujalkumar.knockme.ui.home
 
-import com.sujalkumar.knockme.data.model.AppUser
-import com.sujalkumar.knockme.data.model.KnockAlert
+import com.sujalkumar.knockme.domain.model.KnockAlert
+import com.sujalkumar.knockme.domain.model.User
 
 data class HomeUiState(
-    val user: AppUser?,
+    val user: User?,
     val myKnockAlerts: List<KnockAlert> = emptyList(),
     val feedKnockAlerts: List<DisplayableKnockAlert> = emptyList()
 )

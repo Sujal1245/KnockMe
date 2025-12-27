@@ -1,6 +1,5 @@
 package com.sujalkumar.knockme.ui.addalert
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,7 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -120,7 +119,7 @@ fun AddKnockAlertScreen(
                 title = { Text("Add New KnockAlert") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Navigate up")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Navigate up")
                     }
                 }
             )
@@ -216,7 +215,7 @@ fun AddKnockAlertScreen(
                                     localCalendar.set(Calendar.MILLISECOND, 0)
 
                                     selectedDateTimeMillis = localCalendar.timeInMillis
-                                    viewModel.onTargetTimestampChanged(selectedDateTimeMillis!!)
+                                    viewModel.onTargetTimeChanged(selectedDateTimeMillis!!)
                                 }
                             }
                         ) { Text("OK") }

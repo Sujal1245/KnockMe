@@ -2,34 +2,30 @@ package com.sujalkumar.knockme.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sujalkumar.knockme.common.Resource
-import com.sujalkumar.knockme.data.model.KnockAlert
+import com.sujalkumar.knockme.domain.model.KnockAlert
 import com.sujalkumar.knockme.domain.repository.KnockAlertRepository
 import com.sujalkumar.knockme.domain.repository.OtherUsersRepository
 import com.sujalkumar.knockme.domain.repository.UserDetailsRepository
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.SharingStarted
 
 class HomeViewModel(
     userDetailsRepository: UserDetailsRepository,
     private val knockAlertRepository: KnockAlertRepository,
     private val otherUsersRepository: OtherUsersRepository
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow<Resource<HomeUiState>>(Resource.Loading)
-    val uiState: StateFlow<Resource<HomeUiState>> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(HomeUiState(user = null))
+    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private val _oneTimeEvent = Channel<HomeOneTimeEvent>()
     val oneTimeEvent = _oneTimeEvent.receiveAsFlow()
@@ -50,29 +46,24 @@ class HomeViewModel(
                 emptyList<KnockAlert>() to activeAlerts
             }
 
-            val deferredFeedKnockAlerts = feedKnockAlertsSource.map { alert ->
-                viewModelScope.async { // Asynchronously fetch owner display name
-                    val owner = otherUsersRepository.getUserById(alert.ownerId)
-                    val hasKnocked = user?.uid in alert.knockedByUids
-                    DisplayableKnockAlert(
-                        alert = alert,
-                        ownerDisplayName = owner?.displayName,
-                        hasKnocked = hasKnocked
-                    )
-                }
+            val feedKnockAlerts = feedKnockAlertsSource.map { alert ->
+                val owner = otherUsersRepository.getUserById(alert.ownerId)
+                val hasKnocked = user?.uid in alert.knockedByUserIds
+                DisplayableKnockAlert(
+                    alert = alert,
+                    ownerDisplayName = owner?.displayName,
+                    hasKnocked = hasKnocked
+                )
             }
 
             HomeUiState(
                 user = user,
                 myKnockAlerts = myKnockAlerts,
-                feedKnockAlerts = deferredFeedKnockAlerts.awaitAll() // Wait for all fetches to complete
+                feedKnockAlerts = feedKnockAlerts
             )
         }
-            .catch { e ->
-                _uiState.value = Resource.Error(e.message ?: "An error occurred loading home data", e)
-            }
-            .onEach { successState ->
-                _uiState.value = Resource.Success(successState)
+            .onEach { newState ->
+                _uiState.value = newState
             }
             .launchIn(viewModelScope)
     }
@@ -87,41 +78,43 @@ class HomeViewModel(
             }
 
             val currentState = _uiState.value
-            if (currentState is Resource.Success) {
-                val currentFeed = currentState.data.feedKnockAlerts
-                val alertIndex = currentFeed.indexOfFirst { it.alert.id == alertId }
+            val currentFeed = currentState.feedKnockAlerts
+            val alertIndex = currentFeed.indexOfFirst { it.alert.id == alertId }
 
-                if (alertIndex == -1) {
-                    return@launch // Alert not found
-                }
+            if (alertIndex == -1) return@launch
 
-                val displayableAlert = currentFeed[alertIndex]
+            val displayableAlert = currentFeed[alertIndex]
 
-                if (displayableAlert.alert.ownerId == currentUser.uid) {
-                    return@launch // User cannot knock on their own alert
-                }
+            if (displayableAlert.alert.ownerId == currentUser.uid) return@launch
 
-                // Optimistically update UI
-                val updatedFeed = currentFeed.toMutableList().apply {
-                    this[alertIndex] = displayableAlert.copy(hasKnocked = true)
-                }
-                _uiState.value = Resource.Success(currentState.data.copy(feedKnockAlerts = updatedFeed))
-
-                // Perform the knock
-                val result = knockAlertRepository.knockOnAlert(alertId = alertId, userId = currentUser.uid)
-
-                // Revert UI on failure
-                result.onFailure {
-                    val revertedFeed = currentFeed.toMutableList().apply {
-                        this[alertIndex] = displayableAlert
-                    }
-                    _uiState.value = Resource.Success(currentState.data.copy(feedKnockAlerts = revertedFeed))
-                }
+            // Optimistic update
+            val updatedFeed = currentFeed.toMutableList().apply {
+                this[alertIndex] = displayableAlert.copy(hasKnocked = true)
             }
+            _uiState.value = currentState.copy(feedKnockAlerts = updatedFeed)
+
+            val result = knockAlertRepository.knockOnAlert(
+                alertId = alertId,
+                userId = currentUser.uid
+            )
+
+            result.onFailure {
+                val revertedFeed = currentFeed.toMutableList().apply {
+                    this[alertIndex] = displayableAlert
+                }
+                _uiState.value = currentState.copy(feedKnockAlerts = revertedFeed)
+            }
+        }
+    }
+
+    fun onLogoutRequested() {
+        viewModelScope.launch {
+            _oneTimeEvent.send(HomeOneTimeEvent.LoggedOut)
         }
     }
 }
 
 sealed interface HomeOneTimeEvent {
     data object UserNotLoggedIn : HomeOneTimeEvent
+    data object LoggedOut : HomeOneTimeEvent
 }

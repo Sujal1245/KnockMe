@@ -2,6 +2,7 @@ package com.sujalkumar.knockme.ui.onboarding
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContent
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
@@ -28,16 +30,18 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sujalkumar.knockme.R
+import com.sujalkumar.knockme.domain.model.AuthError
 import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -48,25 +52,36 @@ fun OnboardingScreen(
     viewModel: AuthViewModel = koinViewModel(),
     onNavigateToHome: () -> Unit,
 ) {
-    val authState by viewModel.authState.collectAsState()
+    val authState by viewModel.authState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(authState.isSignInSuccessful) {
-        if (authState.isSignInSuccessful) {
+    val errorMessage = when (authState.error) {
+        AuthError.Network -> stringResource(R.string.error_network)
+        AuthError.InvalidCredentials -> stringResource(R.string.error_invalid_credentials)
+        AuthError.UserCancelled -> null
+        AuthError.Unauthorized -> stringResource(R.string.error_unauthorized)
+        AuthError.Unknown -> stringResource(R.string.error_unknown)
+        null -> null
+    }
+
+    LaunchedEffect(authState.isSignedIn) {
+        if (authState.isSignedIn) {
             onNavigateToHome()
         }
     }
 
-    LaunchedEffect(authState.signInError) {
-        authState.signInError?.let {
-            snackbarHostState.showSnackbar(message = it, duration = SnackbarDuration.Long)
-            viewModel.resetState()
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { message ->
+            snackbarHostState.showSnackbar(
+                message = message,
+                duration = SnackbarDuration.Long
+            )
+            viewModel.clearError()
         }
     }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = WindowInsets.safeContent
     ) { innerPadding ->
@@ -75,10 +90,10 @@ fun OnboardingScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 24.dp, vertical = 32.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             AnimatedVisibility(
-                visible = !authState.isSignInSuccessful,
+                visible = !authState.isSignedIn,
                 modifier = Modifier.align(Alignment.Center)
             ) {
                 Column(

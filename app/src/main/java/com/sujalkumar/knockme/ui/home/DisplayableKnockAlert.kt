@@ -1,6 +1,6 @@
 package com.sujalkumar.knockme.ui.home
 
-import com.sujalkumar.knockme.data.model.KnockAlert
+import com.sujalkumar.knockme.domain.model.KnockAlert
 
 data class DisplayableKnockAlert(
     val alert: KnockAlert,

@@ -1,6 +1,6 @@
 package com.sujalkumar.knockme.domain.repository
 
-import com.sujalkumar.knockme.data.model.KnockAlert
+import com.sujalkumar.knockme.domain.model.KnockAlert
 import kotlinx.coroutines.flow.Flow
 
 interface KnockAlertRepository {

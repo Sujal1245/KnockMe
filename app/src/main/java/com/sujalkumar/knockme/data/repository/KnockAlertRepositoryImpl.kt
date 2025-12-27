@@ -4,7 +4,10 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.toObject
-import com.sujalkumar.knockme.data.model.KnockAlert
+import com.sujalkumar.knockme.data.mapper.toFirebaseKnockAlert
+import com.sujalkumar.knockme.data.mapper.toKnockAlert
+import com.sujalkumar.knockme.data.model.FirebaseKnockAlert
+import com.sujalkumar.knockme.domain.model.KnockAlert
 import com.sujalkumar.knockme.domain.repository.KnockAlertRepository
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -19,12 +22,12 @@ class KnockAlertRepositoryImpl(
 
     override suspend fun addKnockAlert(alert: KnockAlert): Result<Unit> {
         return try {
-            // Generate a new document reference with an auto-generated ID
             val newAlertRef = knockAlertsCollection.document()
-            // Create a new alert object with the generated ID set in its 'id' field
             val alertWithId = alert.copy(id = newAlertRef.id)
-            // Set the data for the new document using the alert object that includes the ID
-            newAlertRef.set(alertWithId).await()
+
+            val firebaseAlertWithId = alertWithId.toFirebaseKnockAlert()
+
+            newAlertRef.set(firebaseAlertWithId).await()
 
             Result.success(Unit)
         } catch (e: Exception) {
@@ -44,7 +47,7 @@ class KnockAlertRepositoryImpl(
                 }
                 if (snapshot != null) {
                     val alerts = snapshot.documents.mapNotNull {
-                        it.toObject<KnockAlert>()
+                        it.toObject<FirebaseKnockAlert>()?.toKnockAlert()
                     }
                     trySend(alerts).isSuccess
                 }
@@ -73,8 +76,8 @@ class KnockAlertRepositoryImpl(
                 }
                 if (snapshot != null) {
                     val alerts = snapshot.documents.mapNotNull {
-                        val knockAlert = it.toObject<KnockAlert>()
-                        knockAlert?.copy(id = it.id)
+                        val knockAlert = it.toObject<FirebaseKnockAlert>()
+                        knockAlert?.copy(id = it.id)?.toKnockAlert()
                     }
                     trySend(alerts).isSuccess
                 }

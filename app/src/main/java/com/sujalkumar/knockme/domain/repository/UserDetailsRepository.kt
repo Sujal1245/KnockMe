@@ -1,13 +1,12 @@
 package com.sujalkumar.knockme.domain.repository
 
-import com.google.firebase.auth.FirebaseUser
-import com.sujalkumar.knockme.data.model.AppUser
+import com.sujalkumar.knockme.domain.model.User
 import kotlinx.coroutines.flow.Flow
 
 interface UserDetailsRepository {
-    val user: Flow<AppUser?>
+    val user: Flow<User?>
 
-    suspend fun setUserDetails(user: FirebaseUser)
+    suspend fun setUserDetails(user: User)
 
     suspend fun clearUserDetails()
 }

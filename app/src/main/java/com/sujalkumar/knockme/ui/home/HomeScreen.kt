@@ -1,5 +1,10 @@
 package com.sujalkumar.knockme.ui.home
 
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import kotlinx.coroutines.flow.collectLatest
+
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -33,7 +38,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
@@ -44,6 +48,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,14 +56,14 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.sujalkumar.knockme.common.Resource
-import com.sujalkumar.knockme.data.model.AppUser
-import com.sujalkumar.knockme.data.model.KnockAlert
+import com.sujalkumar.knockme.domain.model.KnockAlert
+import com.sujalkumar.knockme.domain.model.User
 import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import com.sujalkumar.knockme.util.TimeUtils
 import org.koin.androidx.compose.koinViewModel
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 @Composable
 fun HomeScreen(
@@ -69,13 +74,30 @@ fun HomeScreen(
     onLogout: () -> Unit
 ) {
     val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        homeViewModel.oneTimeEvent.collectLatest { event ->
+            when (event) {
+                HomeOneTimeEvent.UserNotLoggedIn -> {
+                    snackbarHostState.showSnackbar(
+                        message = "You must be logged in to perform this action."
+                    )
+                }
+                HomeOneTimeEvent.LoggedOut -> {
+                    authViewModel.signOut()
+                    onLogout()
+                }
+            }
+        }
+    }
 
     HomeScreen(
         uiState = uiState,
+        snackbarHostState = snackbarHostState,
         onKnockAction = { alert -> homeViewModel.knockOnAlert(alert.id) },
         onSignOut = {
-            authViewModel.signOut()
-            onLogout()
+            homeViewModel.onLogoutRequested()
         },
         onNavigateToAddAlert = onNavigateToAddAlert,
         modifier = modifier
@@ -88,16 +110,14 @@ fun HomeScreen(
 )
 @Composable
 internal fun HomeScreen(
-    uiState: Resource<HomeUiState>,
+    uiState: HomeUiState,
+    snackbarHostState: SnackbarHostState,
     onKnockAction: (KnockAlert) -> Unit,
     onSignOut: () -> Unit,
     onNavigateToAddAlert: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val showFab = when (uiState) {
-        is Resource.Success -> uiState.data.myKnockAlerts.isNotEmpty()
-        else -> false
-    }
+    val showFab = uiState.myKnockAlerts.isNotEmpty()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -121,57 +141,32 @@ internal fun HomeScreen(
                     Icon(Icons.Filled.Add, contentDescription = "Create KnockAlert")
                 }
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            when (uiState) {
-                is Resource.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        LoadingIndicator()
-                    }
-                }
-
-                is Resource.Error -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = uiState.message,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
-                }
-
-                is Resource.Success -> {
-                    if (uiState.data.user != null) {
-                        HomeScreenSuccessContent(
-                            user = uiState.data.user,
-                            myKnockAlerts = uiState.data.myKnockAlerts,
-                            feedKnockAlerts = uiState.data.feedKnockAlerts,
-                            onKnockAction = onKnockAction,
-                            onNavigateToAddAlert = onNavigateToAddAlert,
-                            modifier = Modifier
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "No user is currently logged in.",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        }
-                    }
+            if (uiState.user != null) {
+                HomeScreenSuccessContent(
+                    user = uiState.user,
+                    myKnockAlerts = uiState.myKnockAlerts,
+                    feedKnockAlerts = uiState.feedKnockAlerts,
+                    onKnockAction = onKnockAction,
+                    onNavigateToAddAlert = onNavigateToAddAlert,
+                    modifier = Modifier
+                )
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No user is currently logged in.",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                 }
             }
         }
@@ -184,7 +179,7 @@ internal fun HomeScreen(
 )
 @Composable
 internal fun HomeScreenSuccessContent(
-    user: AppUser,
+    user: User,
     myKnockAlerts: List<KnockAlert>,
     feedKnockAlerts: List<DisplayableKnockAlert>,
     onKnockAction: (KnockAlert) -> Unit,
@@ -379,7 +374,7 @@ internal fun MyKnockAlertCard(
                 minLines = 2
             )
             Text(
-                text = "Active since: ${TimeUtils.toRelativeTime(alert.targetTimestamp)}",
+                text = "Active since: ${TimeUtils.toRelativeTime(alert.targetTime.toEpochMilliseconds())}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -419,7 +414,7 @@ internal fun KnockAlertItem(
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
                 Text(
-                    text = "Active since: ${TimeUtils.toRelativeTime(alert.targetTimestamp)}",
+                    text = "Active since: ${TimeUtils.toRelativeTime(alert.targetTime.toEpochMilliseconds())}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -457,13 +452,12 @@ internal fun KnockAlertItem(
 @Composable
 fun HomeScreenPreviewNoUser() {
     HomeScreen(
-        uiState = Resource.Success(
-            HomeUiState(
-                user = null,
-                myKnockAlerts = emptyList(),
-                feedKnockAlerts = emptyList()
-            )
+        uiState = HomeUiState(
+            user = null,
+            myKnockAlerts = emptyList(),
+            feedKnockAlerts = emptyList()
         ),
+        snackbarHostState = SnackbarHostState(),
         onKnockAction = {},
         onNavigateToAddAlert = {},
         onSignOut = {}
@@ -474,10 +468,9 @@ fun HomeScreenPreviewNoUser() {
 @Preview(showBackground = true, name = "Home Screen - User With Alerts")
 @Composable
 fun HomeScreenPreviewWithUserAndAlerts() {
-    val sampleUser = AppUser(
+    val sampleUser = User(
         uid = "currentUser123",
-        displayName = "Current User",
-        email = "current.user@example.com"
+        displayName = "Current User"
     )
     val now = Clock.System.now().toEpochMilliseconds()
     val myAlerts = listOf(
@@ -485,19 +478,22 @@ fun HomeScreenPreviewWithUserAndAlerts() {
             id = "myAlert1",
             ownerId = "currentUser123",
             content = "This is my first alert, just a reminder for myself.",
-            targetTimestamp = now - 200000
+            targetTime = Instant.fromEpochMilliseconds(now - 200000),
+            knockedByUserIds = emptyList()
         ),
         KnockAlert(
             id = "myAlert2",
             ownerId = "currentUser123",
             content = "Another personal alert for the horizontal pager.",
-            targetTimestamp = now - 150000
+            targetTime = Instant.fromEpochMilliseconds(now - 150000),
+            knockedByUserIds = emptyList()
         ),
         KnockAlert(
             id = "myAlert3",
             ownerId = "currentUser123",
             content = "A third alert to test the pager dots properly.",
-            targetTimestamp = now - 100000
+            targetTime = Instant.fromEpochMilliseconds(now - 100000),
+            knockedByUserIds = emptyList()
         )
     )
     val feedAlerts = listOf(
@@ -506,7 +502,8 @@ fun HomeScreenPreviewWithUserAndAlerts() {
                 id = "feedAlert1",
                 ownerId = "otherUser456",
                 content = "Alert from another user, visible in the main feed.",
-                targetTimestamp = now - 100000
+                targetTime = Instant.fromEpochMilliseconds(now - 100000),
+                knockedByUserIds = listOf("someUserId")
             ),
             ownerDisplayName = "Other User",
             hasKnocked = true
@@ -516,19 +513,19 @@ fun HomeScreenPreviewWithUserAndAlerts() {
                 id = "feedAlert2",
                 ownerId = "anotherUser789",
                 content = "Second alert in the feed from someone else.",
-                targetTimestamp = now - 50000
+                targetTime = Instant.fromEpochMilliseconds(now - 50000),
+                knockedByUserIds = emptyList()
             ),
             ownerDisplayName = "Another User"
         )
     )
     HomeScreen(
-        uiState = Resource.Success(
-            HomeUiState(
-                user = sampleUser,
-                myKnockAlerts = myAlerts,
-                feedKnockAlerts = feedAlerts
-            )
+        uiState = HomeUiState(
+            user = sampleUser,
+            myKnockAlerts = myAlerts,
+            feedKnockAlerts = feedAlerts
         ),
+        snackbarHostState = SnackbarHostState(),
         onKnockAction = { println("Preview Knock: ${it.id}") },
         onNavigateToAddAlert = {},
         onSignOut = {}
@@ -539,10 +536,9 @@ fun HomeScreenPreviewWithUserAndAlerts() {
 @Preview(showBackground = true, name = "Home Screen - User, No Own Alerts")
 @Composable
 fun HomeScreenPreviewUserNoOwnAlerts() {
-    val sampleUser = AppUser(
+    val sampleUser = User(
         uid = "currentUser123",
-        displayName = "Current User",
-        email = "current.user@example.com"
+        displayName = "Current User"
     )
     val now = Clock.System.now().toEpochMilliseconds()
     val feedAlerts = listOf(
@@ -551,42 +547,20 @@ fun HomeScreenPreviewUserNoOwnAlerts() {
                 id = "feedAlert1",
                 ownerId = "otherUser456",
                 content = "Feed alert when user has no own alerts.",
-                targetTimestamp = now - 100000
+                targetTime = Instant.fromEpochMilliseconds(now - 100000),
+                knockedByUserIds = emptyList()
             ),
             ownerDisplayName = "Other User"
         )
     )
     HomeScreen(
-        uiState = Resource.Success(
-            HomeUiState(
-                user = sampleUser,
-                myKnockAlerts = emptyList(),
-                feedKnockAlerts = feedAlerts
-            )
+        uiState = HomeUiState(
+            user = sampleUser,
+            myKnockAlerts = emptyList(),
+            feedKnockAlerts = feedAlerts
         ),
+        snackbarHostState = SnackbarHostState(),
         onKnockAction = { println("Preview Knock: ${it.id}") },
-        onNavigateToAddAlert = {},
-        onSignOut = {}
-    )
-}
-
-@Preview(showBackground = true, name = "Home Screen - Error State")
-@Composable
-fun HomeScreenPreviewError() {
-    HomeScreen(
-        uiState = Resource.Error("Preview error message"),
-        onKnockAction = {},
-        onNavigateToAddAlert = {},
-        onSignOut = {}
-    )
-}
-
-@Preview(showBackground = true, name = "Home Screen - Loading State")
-@Composable
-fun HomeScreenPreviewLoading() {
-    HomeScreen(
-        uiState = Resource.Loading,
-        onKnockAction = {},
         onNavigateToAddAlert = {},
         onSignOut = {}
     )

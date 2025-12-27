@@ -49,45 +49,6 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                     }
                 )
             }
-        },
-//        entryProvider = { key ->
-//            when (key) {
-//                is Route.Onboarding -> {
-//                    NavEntry(key = key) {
-//                        OnboardingScreen(
-//                            onNavigateToHome = {
-//                                backStack[0] = Route.Home
-//                            }
-//                        )
-//                    }
-//                }
-//
-//                is Route.Home -> {
-//                    NavEntry(key = key) {
-//                        HomeScreen(
-//                            onNavigateToAddAlert = {
-//                                backStack.add(Route.AddKnockAlert)
-//                            },
-//                            onLogout = {
-//                                // Will fix this later.
-////                                backStack[0] = OnboardingNavKey
-//                            }
-//                        )
-//                    }
-//                }
-//
-//                is Route.AddKnockAlert -> {
-//                    NavEntry(key = key) {
-//                        AddKnockAlertScreen(
-//                            onNavigateUp = {
-//                                backStack.remove(Route.AddKnockAlert)
-//                            }
-//                        )
-//                    }
-//                }
-//
-//                else -> error("Unknown NavKey: $key")
-//            }
-//        }
+        }
     )
 }
