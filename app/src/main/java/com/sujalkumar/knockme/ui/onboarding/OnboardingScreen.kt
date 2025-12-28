@@ -2,7 +2,6 @@ package com.sujalkumar.knockme.ui.onboarding
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContent
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
@@ -50,7 +48,6 @@ import org.koin.androidx.compose.koinViewModel
 fun OnboardingScreen(
     modifier: Modifier = Modifier,
     viewModel: AuthViewModel = koinViewModel(),
-    onNavigateToHome: () -> Unit,
 ) {
     val authState by viewModel.authState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -62,12 +59,6 @@ fun OnboardingScreen(
         AuthError.Unauthorized -> stringResource(R.string.error_unauthorized)
         AuthError.Unknown -> stringResource(R.string.error_unknown)
         null -> null
-    }
-
-    LaunchedEffect(authState.isSignedIn) {
-        if (authState.isSignedIn) {
-            onNavigateToHome()
-        }
     }
 
     LaunchedEffect(errorMessage) {

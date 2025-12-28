@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.TimeToLeave
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
@@ -55,7 +56,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sujalkumar.knockme.domain.model.KnockAlert
 import com.sujalkumar.knockme.domain.model.User
-import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import com.sujalkumar.knockme.util.TimeUtils
 import org.koin.androidx.compose.koinViewModel
 import kotlin.time.Clock
@@ -66,7 +66,6 @@ import kotlin.time.Instant
 fun HomeScreen(
     modifier: Modifier = Modifier,
     homeViewModel: HomeViewModel = koinViewModel(),
-    authViewModel: AuthViewModel = koinViewModel(),
     onNavigateToAddAlert: () -> Unit,
     onLogout: () -> Unit
 ) {
@@ -77,10 +76,7 @@ fun HomeScreen(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
         onKnockAction = { alert -> homeViewModel.knockOnAlert(alert.id) },
-        onSignOut = {
-            authViewModel.signOut()
-            onLogout()
-        },
+        onSignOut = onLogout,
         onNavigateToAddAlert = onNavigateToAddAlert,
         modifier = modifier
     )
@@ -145,10 +141,7 @@ internal fun HomeScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "No user is currently logged in.",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    CircularProgressIndicator()
                 }
             }
         }
