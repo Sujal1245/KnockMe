@@ -10,10 +10,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.sujalkumar.knockme.ui.addalert.AddKnockAlertScreen
 import com.sujalkumar.knockme.ui.auth.AuthViewModel
-import com.sujalkumar.knockme.ui.home.HomeScreen
-import com.sujalkumar.knockme.ui.onboarding.OnboardingScreen
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -30,9 +27,9 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
         if (authState.isCheckingSession) return@LaunchedEffect
 
         val targetRoute = if (authState.isSignedIn) {
-            Route.Home
+            Route.Main
         } else {
-            Route.Onboarding
+            Route.Auth
         }
 
         if (backStack.isEmpty() || backStack[0] != targetRoute) {
@@ -50,27 +47,12 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                 rememberViewModelStoreNavEntryDecorator()
             ),
             entryProvider = entryProvider {
-                entry<Route.Onboarding> {
-                    OnboardingScreen()
+                entry<Route.Auth> {
+                    AuthNavigation()
                 }
 
-                entry<Route.Home> {
-                    HomeScreen(
-                        onNavigateToAddAlert = {
-                            backStack.add(Route.AddKnockAlert)
-                        },
-                        onLogout = {
-                            authViewModel.signOut()
-                        }
-                    )
-                }
-
-                entry<Route.AddKnockAlert> {
-                    AddKnockAlertScreen(
-                        onNavigateUp = {
-                            backStack.remove(Route.AddKnockAlert)
-                        }
-                    )
+                entry<Route.Main> {
+                    MainNavigation(onLogout = authViewModel::signOut)
                 }
             }
         )

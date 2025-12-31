@@ -19,6 +19,9 @@ import com.sujalkumar.knockme.data.repository.KnockAlertRepositoryImpl
 import com.sujalkumar.knockme.ui.addalert.AddKnockAlertViewModel
 import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import com.sujalkumar.knockme.ui.home.HomeViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
@@ -32,6 +35,10 @@ val appModule = module {
     viewModelOf(::HomeViewModel)
     viewModelOf(::AuthViewModel)
     viewModelOf(::AddKnockAlertViewModel)
+
+    single<CoroutineScope> {
+        CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    }
 
     single<DataStore<AppUser?>> {
         DataStoreFactory.create(

@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sujalkumar.knockme.domain.model.KnockAlert
 import com.sujalkumar.knockme.domain.model.User
+import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import com.sujalkumar.knockme.util.TimeUtils
 import org.koin.androidx.compose.koinViewModel
 import kotlin.time.Clock
@@ -314,6 +315,7 @@ internal fun HomeScreenSuccessContent(
 
                             KnockAlertItem(
                                 displayableAlert = displayableAlert,
+                                currentUserId = user.uid,
                                 onKnockAction = onKnockAction,
                                 shape = shape
                             )
@@ -361,6 +363,7 @@ internal fun MyKnockAlertCard(
 @Composable
 internal fun KnockAlertItem(
     displayableAlert: DisplayableKnockAlert,
+    currentUserId: String?,
     onKnockAction: (KnockAlert) -> Unit,
     modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.medium
@@ -395,7 +398,7 @@ internal fun KnockAlertItem(
                 )
             }
 
-            val hasKnocked = displayableAlert.hasKnocked
+            val hasKnocked = displayableAlert.hasKnocked(currentUserId)
             val backgroundColor by animateColorAsState(
                 targetValue = if (hasKnocked) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primaryContainer,
                 label = "BackgroundColor"
@@ -480,8 +483,7 @@ fun HomeScreenPreviewWithUserAndAlerts() {
                 targetTime = Instant.fromEpochMilliseconds(now - 100000),
                 knockedByUserIds = listOf("someUserId")
             ),
-            ownerDisplayName = "Other User",
-            hasKnocked = true
+            ownerDisplayName = "Other User"
         ),
         DisplayableKnockAlert(
             alert = KnockAlert(

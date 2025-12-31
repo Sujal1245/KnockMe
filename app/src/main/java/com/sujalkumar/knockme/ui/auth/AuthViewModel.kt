@@ -22,7 +22,13 @@ class AuthViewModel(
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     init {
+        println("AuthViewModel::init")
         observeAuthState()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        println("AuthViewModel::onCleared")
     }
 
     private fun observeAuthState() {
