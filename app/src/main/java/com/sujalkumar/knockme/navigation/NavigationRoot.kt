@@ -48,7 +48,7 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
             ),
             entryProvider = entryProvider {
                 entry<Route.Auth> {
-                    AuthNavigation()
+                    AuthNavigation(authViewModel = authViewModel)
                 }
 
                 entry<Route.Main> {

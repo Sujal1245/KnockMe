@@ -56,7 +56,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sujalkumar.knockme.domain.model.KnockAlert
 import com.sujalkumar.knockme.domain.model.User
-import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import com.sujalkumar.knockme.util.TimeUtils
 import org.koin.androidx.compose.koinViewModel
 import kotlin.time.Clock

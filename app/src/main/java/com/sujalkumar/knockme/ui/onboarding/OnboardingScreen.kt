@@ -41,13 +41,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sujalkumar.knockme.R
 import com.sujalkumar.knockme.domain.model.AuthError
 import com.sujalkumar.knockme.ui.auth.AuthViewModel
-import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun OnboardingScreen(
-    modifier: Modifier = Modifier,
-    viewModel: AuthViewModel = koinViewModel(),
+    viewModel: AuthViewModel,
+    modifier: Modifier = Modifier
 ) {
     val authState by viewModel.authState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
