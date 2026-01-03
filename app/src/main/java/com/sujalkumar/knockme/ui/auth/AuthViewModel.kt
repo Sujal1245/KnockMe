@@ -31,9 +31,6 @@ class AuthViewModel(
         viewModelScope.launch {
             authRepository.currentUser.collect { user ->
                 if (user != null) {
-                    // Persist public user profile to Firestore (/users/{uid})
-                    otherUsersRepository.upsertCurrentUser(user)
-                    // Persist locally
                     userDetailsRepository.setUserDetails(user)
                 }
 
@@ -58,6 +55,9 @@ class AuthViewModel(
 
             when (val result = authRepository.signInWithGoogle()) {
                 is AuthResult.Success -> {
+
+                    otherUsersRepository.upsertCurrentUser(result.user)
+
                     _authState.update {
                         it.copy(
                             isSigningIn = false,
