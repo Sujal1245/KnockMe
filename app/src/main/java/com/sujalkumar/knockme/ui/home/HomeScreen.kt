@@ -16,7 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
+import com.sujalkumar.knockme.ui.model.AlertOwner
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -54,8 +55,10 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.sujalkumar.knockme.domain.model.KnockAlert
 import com.sujalkumar.knockme.domain.model.User
+import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
 import com.sujalkumar.knockme.util.TimeUtils
 import org.koin.androidx.compose.koinViewModel
 import kotlin.time.Clock
@@ -291,7 +294,11 @@ internal fun HomeScreenSuccessContent(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        itemsIndexed(feedKnockAlerts) { index, displayableAlert ->
+                        items(
+                            items = feedKnockAlerts,
+                            key = { it.alert.id }
+                        ) { displayableAlert ->
+                            val index = feedKnockAlerts.indexOf(displayableAlert)
                             val shape = when {
                                 feedKnockAlerts.size == 1 -> RoundedCornerShape(16.dp)
 
@@ -378,6 +385,15 @@ internal fun KnockAlertItem(
                 .padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            AsyncImage(
+                model = displayableAlert.owner?.photoUrl,
+                contentDescription = "Alert owner avatar",
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape),
+                alignment = Alignment.Center
+            )
+            Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = alert.content,
@@ -385,7 +401,7 @@ internal fun KnockAlertItem(
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
                 Text(
-                    text = "From: ${displayableAlert.ownerDisplayName ?: "Unknown"}",
+                    text = "From: ${displayableAlert.owner?.displayName ?: "Unknown"}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 4.dp)
@@ -482,7 +498,10 @@ fun HomeScreenPreviewWithUserAndAlerts() {
                 targetTime = Instant.fromEpochMilliseconds(now - 100000),
                 knockedByUserIds = listOf("someUserId")
             ),
-            ownerDisplayName = "Other User"
+            owner = AlertOwner(
+                displayName = "Other User",
+                photoUrl = null
+            )
         ),
         DisplayableKnockAlert(
             alert = KnockAlert(
@@ -492,7 +511,10 @@ fun HomeScreenPreviewWithUserAndAlerts() {
                 targetTime = Instant.fromEpochMilliseconds(now - 50000),
                 knockedByUserIds = emptyList()
             ),
-            ownerDisplayName = "Another User"
+            owner = AlertOwner(
+                displayName = "Another User",
+                photoUrl = null
+            )
         )
     )
     HomeScreen(
@@ -526,7 +548,10 @@ fun HomeScreenPreviewUserNoOwnAlerts() {
                 targetTime = Instant.fromEpochMilliseconds(now - 100000),
                 knockedByUserIds = emptyList()
             ),
-            ownerDisplayName = "Other User"
+            owner = AlertOwner(
+                displayName = "Other User",
+                photoUrl = null
+            )
         )
     )
     HomeScreen(

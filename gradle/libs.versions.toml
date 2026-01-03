@@ -10,6 +10,7 @@ materialIcons = "1.7.8"
 credentialManager = "1.5.0"
 googleId = "1.1.1"
 splashScreen = "1.2.0"
+coil = "3.3.0"
 
 googleGmsServices = "4.4.4"
 firebaseBom = "34.7.0"
@@ -55,6 +56,9 @@ koin-android = { group = "io.insert-koin", name = "koin-android", version.ref = 
 koin-core = { group = "io.insert-koin", name = "koin-core", version.ref = "koin" }
 koin-androidx-compose = { group = "io.insert-koin", name = "koin-androidx-compose", version.ref = "koin" }
 androidx-datastore-core = { group = "androidx.datastore", name = "datastore-core", version.ref = "datastoreCore" }
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+
+coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

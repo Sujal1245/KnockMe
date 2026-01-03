@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sujalkumar.knockme.domain.model.AuthResult
 import com.sujalkumar.knockme.domain.repository.AuthRepository
+import com.sujalkumar.knockme.domain.repository.OtherUsersRepository
 import com.sujalkumar.knockme.domain.repository.UserDetailsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +14,8 @@ import kotlinx.coroutines.launch
 
 class AuthViewModel(
     private val authRepository: AuthRepository,
-    private val userDetailsRepository: UserDetailsRepository
+    private val userDetailsRepository: UserDetailsRepository,
+    private val otherUsersRepository: OtherUsersRepository
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow(
@@ -22,18 +24,19 @@ class AuthViewModel(
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     init {
-        println("AuthViewModel::init")
         observeAuthState()
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        println("AuthViewModel::onCleared")
     }
 
     private fun observeAuthState() {
         viewModelScope.launch {
             authRepository.currentUser.collect { user ->
+                if (user != null) {
+                    // Persist public user profile to Firestore (/users/{uid})
+                    otherUsersRepository.upsertCurrentUser(user)
+                    // Persist locally
+                    userDetailsRepository.setUserDetails(user)
+                }
+
                 _authState.update {
                     it.copy(
                         isCheckingSession = false,
@@ -55,7 +58,12 @@ class AuthViewModel(
 
             when (val result = authRepository.signInWithGoogle()) {
                 is AuthResult.Success -> {
-                    handleSuccessfulSignIn(result.user)
+                    _authState.update {
+                        it.copy(
+                            isSigningIn = false,
+                            error = null
+                        )
+                    }
                 }
 
                 is AuthResult.Failure -> {
@@ -68,17 +76,6 @@ class AuthViewModel(
                     }
                 }
             }
-        }
-    }
-
-    private suspend fun handleSuccessfulSignIn(user: com.sujalkumar.knockme.domain.model.User) {
-        userDetailsRepository.setUserDetails(user)
-        _authState.update {
-            it.copy(
-                isSigningIn = false,
-                isSignedIn = true,
-                error = null
-            )
         }
     }
 

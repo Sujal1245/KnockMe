@@ -1,19 +1,21 @@
 package com.sujalkumar.knockme.data.repository
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
+import com.sujalkumar.knockme.data.mapper.toFirestoreUser
 import com.sujalkumar.knockme.data.mapper.toUser
-import com.sujalkumar.knockme.data.model.AppUser
+import com.sujalkumar.knockme.data.model.FirestoreUser
 import com.sujalkumar.knockme.domain.model.User
 import com.sujalkumar.knockme.domain.repository.OtherUsersRepository
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.tasks.await
 
 class OtherUsersRepositoryImpl(
     private val firestore: FirebaseFirestore,
@@ -32,8 +34,14 @@ class OtherUsersRepositoryImpl(
             }
     }
 
+    override suspend fun upsertCurrentUser(user: User) {
+        firestore.collection("users")
+            .document(user.uid)
+            .set(user.toFirestoreUser(), SetOptions.merge())
+            .await()
+    }
+
     private fun fetchAndCacheUser(userId: String) {
-        // Fire-and-forget fetch; cache drives UI updates
         externalScope.launch {
             try {
                 val document = firestore
@@ -42,7 +50,11 @@ class OtherUsersRepositoryImpl(
                     .get()
                     .await()
 
-                val user = document.toObject(AppUser::class.java)?.toUser()
+                if (!document.exists()) return@launch
+
+                val user = document
+                    .toObject(FirestoreUser::class.java)
+                    ?.toUser()
 
                 if (user != null) {
                     userCache.update { current ->
@@ -51,8 +63,8 @@ class OtherUsersRepositoryImpl(
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (_: Exception) {
-                // ignore – best effort cache
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

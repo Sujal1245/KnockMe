@@ -7,18 +7,25 @@ import com.sujalkumar.knockme.domain.model.KnockAlertResult
 import com.sujalkumar.knockme.domain.repository.AuthRepository
 import com.sujalkumar.knockme.domain.repository.KnockAlertRepository
 import com.sujalkumar.knockme.domain.repository.OtherUsersRepository
+import com.sujalkumar.knockme.ui.model.AlertOwner
+import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
     authRepository: AuthRepository,
     private val knockAlertRepository: KnockAlertRepository,
@@ -28,7 +35,8 @@ class HomeViewModel(
     private val _uiState = MutableStateFlow(HomeUiState(user = null))
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private val ownersMap = MutableStateFlow<Map<String, String?>>(emptyMap())
+    private val ownersMap = MutableStateFlow<Map<String, AlertOwner?>>(emptyMap())
+    private val observedOwnerIds = mutableSetOf<String>()
 
     private val user = authRepository.currentUser.stateIn(
         scope = viewModelScope,
@@ -36,15 +44,19 @@ class HomeViewModel(
         initialValue = null
     )
 
-    init {
-        val alertsFlow = knockAlertRepository.observeKnockAlerts()
+    private val alertsFlow = user
+        .flatMapLatest { currentUser ->
+            if (currentUser == null) {
+                flowOf(emptyList())
+            } else {
+                knockAlertRepository.observeKnockAlerts()
+                    .catch { emit(emptyList()) }
+            }
+        }
 
+    init {
         combine(user, alertsFlow, ownersMap) { user, alerts, owners ->
-            val previousOwnerNames = _uiState.value.feedKnockAlerts
-                .associateBy(
-                    keySelector = { it.alert.ownerId },
-                    valueTransform = { it.ownerDisplayName }
-                )
+            println(owners)
 
             val now = System.currentTimeMillis()
 
@@ -64,12 +76,12 @@ class HomeViewModel(
                 feedKnockAlerts = feedKnockAlertsSource.map { alert ->
                     DisplayableKnockAlert(
                         alert = alert,
-                        ownerDisplayName = owners[alert.ownerId]
-                            ?: previousOwnerNames[alert.ownerId]
+                        owner = owners[alert.ownerId]
                     )
                 }
             )
         }
+            .catch { /* ignore transient Firestore permission errors during auth warm-up */ }
             .onEach { newState ->
                 _uiState.value = newState
             }
@@ -79,19 +91,30 @@ class HomeViewModel(
             .map {
                 it.feedKnockAlerts.map { displayableKnockAlert ->
                     displayableKnockAlert.alert.ownerId
-                }
-                    .distinct()
+                }.distinct()
             }
             .onEach { ownerIds ->
-                ownerIds.forEach { ownerId ->
-                    otherUsersRepository.observeUser(ownerId)
-                        .onEach { owner ->
-                            ownersMap.update { current ->
-                                current + (ownerId to owner?.displayName)
+                if (user.value == null) return@onEach
+
+                ownerIds
+                    .filterNot { observedOwnerIds.contains(it) }
+                    .forEach { ownerId ->
+                        observedOwnerIds.add(ownerId)
+                        otherUsersRepository.observeUser(ownerId)
+                            .onEach { owner ->
+                                ownersMap.update { current ->
+                                    current + (
+                                        ownerId to owner?.let {
+                                            AlertOwner(
+                                                displayName = it.displayName,
+                                                photoUrl = it.photoUrl
+                                            )
+                                        }
+                                    )
+                                }
                             }
-                        }
-                        .launchIn(viewModelScope)
-                }
+                            .launchIn(viewModelScope)
+                    }
             }
             .launchIn(viewModelScope)
     }
