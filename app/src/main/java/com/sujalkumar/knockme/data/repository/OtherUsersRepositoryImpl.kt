@@ -7,29 +7,32 @@ import com.sujalkumar.knockme.data.mapper.toUser
 import com.sujalkumar.knockme.data.model.FirestoreUser
 import com.sujalkumar.knockme.domain.model.User
 import com.sujalkumar.knockme.domain.repository.OtherUsersRepository
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class OtherUsersRepositoryImpl(
-    private val firestore: FirebaseFirestore,
-    private val externalScope: CoroutineScope
+    private val firestore: FirebaseFirestore
 ) : OtherUsersRepository {
 
     private val userCache = MutableStateFlow<Map<String, User>>(emptyMap())
+    private val inFlightFetches = mutableSetOf<String>()
 
     override fun observeUser(userId: String): Flow<User?> {
         return userCache
             .map { it[userId] }
             .onStart {
-                if (!userCache.value.containsKey(userId)) {
-                    fetchAndCacheUser(userId)
+                if (!userCache.value.containsKey(userId) &&
+                    inFlightFetches.add(userId)
+                ) {
+                    try {
+                        fetchAndCacheUser(userId)
+                    } finally {
+                        inFlightFetches.remove(userId)
+                    }
                 }
             }
     }
@@ -41,30 +44,22 @@ class OtherUsersRepositoryImpl(
             .await()
     }
 
-    private fun fetchAndCacheUser(userId: String) {
-        externalScope.launch {
-            try {
-                val document = firestore
-                    .collection("users")
-                    .document(userId)
-                    .get()
-                    .await()
+    private suspend fun fetchAndCacheUser(userId: String) {
+        val document = firestore
+            .collection("users")
+            .document(userId)
+            .get()
+            .await()
 
-                if (!document.exists()) return@launch
+        if (!document.exists()) return
 
-                val user = document
-                    .toObject(FirestoreUser::class.java)
-                    ?.toUser()
+        val user = document
+            .toObject(FirestoreUser::class.java)
+            ?.toUser()
 
-                if (user != null) {
-                    userCache.update { current ->
-                        current + (userId to user)
-                    }
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                e.printStackTrace()
+        if (user != null) {
+            userCache.update { current ->
+                current + (userId to user)
             }
         }
     }
