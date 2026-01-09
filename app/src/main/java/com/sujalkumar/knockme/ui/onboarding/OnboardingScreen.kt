@@ -36,12 +36,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sujalkumar.knockme.R
 import com.sujalkumar.knockme.domain.model.AuthError
 import com.sujalkumar.knockme.ui.auth.AuthState
 import com.sujalkumar.knockme.ui.auth.AuthViewModel
+import com.sujalkumar.knockme.ui.theme.KnockMeTheme
 
 @Composable
 fun OnboardingRoute(
@@ -173,5 +175,29 @@ internal fun OnboardingScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun OnboardingScreenPreview() {
+    KnockMeTheme {
+        OnboardingScreen(
+            authState = AuthState(),
+            onClearError = {},
+            onSignInWithGoogle = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun OnboardingScreenErrorPreview() {
+    KnockMeTheme {
+        OnboardingScreen(
+            authState = AuthState(error = AuthError.Network),
+            onClearError = {},
+            onSignInWithGoogle = {}
+        )
     }
 }
