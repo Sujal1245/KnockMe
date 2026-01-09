@@ -66,7 +66,7 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 @Composable
-fun HomeScreen(
+fun HomeRoute(
     modifier: Modifier = Modifier,
     homeViewModel: HomeViewModel = koinViewModel(),
     onNavigateToAddAlert: () -> Unit,

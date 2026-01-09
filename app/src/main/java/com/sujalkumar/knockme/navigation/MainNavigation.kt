@@ -8,7 +8,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.sujalkumar.knockme.ui.addalert.AddKnockAlertScreen
-import com.sujalkumar.knockme.ui.home.HomeScreen
+import com.sujalkumar.knockme.ui.home.HomeRoute
 
 @Composable
 fun MainNavigation(
@@ -25,7 +25,7 @@ fun MainNavigation(
         ),
         entryProvider = entryProvider {
             entry<Route.Main.Home> {
-                HomeScreen(
+                HomeRoute(
                     onNavigateToAddAlert = {
                         mainBackStack.add(Route.Main.AddKnockAlert)
                     },

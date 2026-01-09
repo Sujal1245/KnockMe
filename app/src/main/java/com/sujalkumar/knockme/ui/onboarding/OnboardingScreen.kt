@@ -40,17 +40,33 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sujalkumar.knockme.R
 import com.sujalkumar.knockme.domain.model.AuthError
+import com.sujalkumar.knockme.ui.auth.AuthState
 import com.sujalkumar.knockme.ui.auth.AuthViewModel
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun OnboardingScreen(
+fun OnboardingRoute(
     viewModel: AuthViewModel,
     modifier: Modifier = Modifier
 ) {
     val authState by viewModel.authState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
 
+    OnboardingScreen(
+        authState = authState,
+        onClearError = viewModel::clearError,
+        onSignInWithGoogle = viewModel::signInWithGoogle,
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun OnboardingScreen(
+    authState: AuthState,
+    onClearError: () -> Unit,
+    onSignInWithGoogle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
     val errorMessage = when (authState.error) {
         AuthError.Network -> stringResource(R.string.error_network)
         AuthError.InvalidCredentials -> stringResource(R.string.error_invalid_credentials)
@@ -66,7 +82,7 @@ fun OnboardingScreen(
                 message = message,
                 duration = SnackbarDuration.Long
             )
-            viewModel.clearError()
+            onClearError()
         }
     }
 
@@ -116,7 +132,7 @@ fun OnboardingScreen(
                     Spacer(modifier = Modifier.height(48.dp))
 
                     Button(
-                        onClick = { viewModel.signInWithGoogle() },
+                        onClick = onSignInWithGoogle,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
@@ -153,7 +169,7 @@ fun OnboardingScreen(
                         Spacer(Modifier.size(ButtonDefaults.IconSpacing))
                         Text("Continue with Email", fontWeight = FontWeight.Medium)
                     }
-                     Spacer(modifier = Modifier.height(64.dp))
+                    Spacer(modifier = Modifier.height(64.dp))
                 }
             }
         }
