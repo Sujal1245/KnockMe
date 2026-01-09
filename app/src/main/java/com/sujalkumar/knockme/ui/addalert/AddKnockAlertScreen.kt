@@ -39,13 +39,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.sujalkumar.knockme.ui.theme.KnockMeTheme
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
+import kotlin.time.Instant
 
 // Helper function to format Long timestamp to a readable string
 private fun formatEpochMillisToDateTime(millis: Long?): String {
@@ -58,19 +61,37 @@ private fun formatEpochMillisToDateTime(millis: Long?): String {
     return sdf.format(calendar.time)
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun AddKnockAlertScreen(
+fun AddKnockAlertRoute(
     viewModel: AddKnockAlertViewModel = koinViewModel(),
     onNavigateUp: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val alertContent by viewModel.alertContent.collectAsStateWithLifecycle()
 
+    AddKnockAlertScreen(
+        uiState = uiState,
+        onAlertContentChanged = viewModel::onAlertContentChanged,
+        onTargetTimeChanged = viewModel::onTargetTimeChanged,
+        onSubmit = viewModel::addKnockAlert,
+        onResetState = viewModel::resetState,
+        onNavigateUp = onNavigateUp
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun AddKnockAlertScreen(
+    uiState: AddKnockAlertUiState,
+    onAlertContentChanged: (String) -> Unit,
+    onTargetTimeChanged: (Long) -> Unit,
+    onSubmit: () -> Unit,
+    onResetState: () -> Unit,
+    onNavigateUp: () -> Unit
+) {
     var showDatePickerDialog by remember { mutableStateOf(false) }
     var showTimePickerDialog by remember { mutableStateOf(false) }
 
-    var selectedDateTimeMillis by remember { mutableStateOf<Long?>(null) }
+    var selectedDateTimeMillis by remember { mutableStateOf(uiState.targetTime?.toEpochMilliseconds()) }
 
     val context = LocalContext.current
 
@@ -96,20 +117,18 @@ fun AddKnockAlertScreen(
         derivedStateOf { formatEpochMillisToDateTime(selectedDateTimeMillis) }
     }
 
-    LaunchedEffect(uiState) {
-        when (val state = uiState) {
-            is AddKnockAlertUiState.Success -> {
+    LaunchedEffect(uiState.isSuccess, uiState.errorMessage) {
+        when {
+            uiState.isSuccess -> {
                 Toast.makeText(context, "Alert added successfully!", Toast.LENGTH_SHORT).show()
-                viewModel.resetState()
+                onResetState()
                 onNavigateUp()
             }
 
-            is AddKnockAlertUiState.Error -> {
-                Toast.makeText(context, "Error: ${state.message}", Toast.LENGTH_LONG).show()
-                viewModel.resetState()
+            uiState.errorMessage != null -> {
+                Toast.makeText(context, uiState.errorMessage, Toast.LENGTH_LONG).show()
+                onResetState()
             }
-
-            else -> Unit
         }
     }
 
@@ -119,7 +138,10 @@ fun AddKnockAlertScreen(
                 title = { Text("Add New KnockAlert") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Navigate up")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Navigate up"
+                        )
                     }
                 }
             )
@@ -134,8 +156,8 @@ fun AddKnockAlertScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedTextField(
-                value = alertContent,
-                onValueChange = { viewModel.onAlertContentChanged(it) },
+                value = uiState.alertContent,
+                onValueChange = { onAlertContentChanged(it) },
                 label = { Text("Alert Content") },
                 modifier = Modifier.fillMaxWidth(),
                 maxLines = 5
@@ -146,12 +168,7 @@ fun AddKnockAlertScreen(
                 onValueChange = { /* Not directly editable */ },
                 label = { Text("Target Date & Time") },
                 modifier = Modifier
-                    .fillMaxWidth()
-//                    .clickable(onClick = {
-//                        showDatePickerDialog = true
-//                        Log.i("AddKnockAlertScreen", "onClick")
-//                    })
-                ,
+                    .fillMaxWidth(),
                 readOnly = true,
                 trailingIcon = {
                     Icon(
@@ -215,7 +232,7 @@ fun AddKnockAlertScreen(
                                     localCalendar.set(Calendar.MILLISECOND, 0)
 
                                     selectedDateTimeMillis = localCalendar.timeInMillis
-                                    viewModel.onTargetTimeChanged(selectedDateTimeMillis!!)
+                                    onTargetTimeChanged(selectedDateTimeMillis!!)
                                 }
                             }
                         ) { Text("OK") }
@@ -228,23 +245,25 @@ fun AddKnockAlertScreen(
 
             Button(
                 onClick = {
-                    if (alertContent.isNotBlank() && selectedDateTimeMillis != null) {
-                        viewModel.addKnockAlert()
+                    if (uiState.alertContent.isNotBlank() && selectedDateTimeMillis != null) {
+                        onSubmit()
                     } else if (selectedDateTimeMillis == null) {
                         Toast.makeText(
                             context,
                             "Please select a target date and time",
                             Toast.LENGTH_SHORT
                         ).show()
-                    } else if (alertContent.isBlank()) {
+                    } else if (uiState.alertContent.isBlank()) {
                         Toast.makeText(context, "Alert content cannot be empty", Toast.LENGTH_SHORT)
                             .show()
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = uiState != AddKnockAlertUiState.Loading && alertContent.isNotBlank() && selectedDateTimeMillis != null
+                enabled = !uiState.isLoading &&
+                        uiState.alertContent.isNotBlank() &&
+                        selectedDateTimeMillis != null
             ) {
-                if (uiState == AddKnockAlertUiState.Loading) {
+                if (uiState.isLoading) {
                     LoadingIndicator()
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Adding Alert...")
@@ -253,5 +272,57 @@ fun AddKnockAlertScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AddKnockAlertPreview() {
+    KnockMeTheme {
+        AddKnockAlertScreen(
+            uiState = AddKnockAlertUiState(),
+            onAlertContentChanged = {},
+            onTargetTimeChanged = {},
+            onSubmit = {},
+            onResetState = {},
+            onNavigateUp = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AddKnockAlertLoadingPreview() {
+    KnockMeTheme {
+        AddKnockAlertScreen(
+            uiState = AddKnockAlertUiState(
+                alertContent = "Don't forget to buy milk",
+                targetTime = Instant.fromEpochMilliseconds(System.currentTimeMillis()),
+                isLoading = true
+            ),
+            onAlertContentChanged = {},
+            onTargetTimeChanged = {},
+            onSubmit = {},
+            onResetState = {},
+            onNavigateUp = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AddKnockAlertFilledPreview() {
+    KnockMeTheme {
+        AddKnockAlertScreen(
+            uiState = AddKnockAlertUiState(
+                alertContent = "Meeting with Team",
+                targetTime = Instant.fromEpochMilliseconds(System.currentTimeMillis())
+            ),
+            onAlertContentChanged = {},
+            onTargetTimeChanged = {},
+            onSubmit = {},
+            onResetState = {},
+            onNavigateUp = {}
+        )
     }
 }

@@ -16,54 +16,67 @@ class AddKnockAlertViewModel(
     private val knockAlertRepository: KnockAlertRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<AddKnockAlertUiState>(AddKnockAlertUiState.Idle)
+    private val _uiState = MutableStateFlow(AddKnockAlertUiState())
     val uiState: StateFlow<AddKnockAlertUiState> = _uiState.asStateFlow()
 
-    private val _alertContent = MutableStateFlow("")
-    val alertContent: StateFlow<String> = _alertContent.asStateFlow()
-
-    private val _targetTime = MutableStateFlow<Instant?>(null)
-    val targetTime: StateFlow<Instant?> = _targetTime.asStateFlow()
-
     fun onAlertContentChanged(content: String) {
-        _alertContent.value = content
+        _uiState.value = _uiState.value.copy(
+            alertContent = content,
+            errorMessage = null
+        )
     }
 
     fun onTargetTimeChanged(timeMillis: Long) {
-        _targetTime.value = Instant.fromEpochMilliseconds(timeMillis)
+        _uiState.value = _uiState.value.copy(
+            targetTime = Instant.fromEpochMilliseconds(timeMillis),
+            errorMessage = null
+        )
     }
 
     fun addKnockAlert() {
         viewModelScope.launch {
-            _uiState.value = AddKnockAlertUiState.Loading
+            val currentState = _uiState.value
 
-            if (_alertContent.value.isBlank()) {
-                _uiState.value = AddKnockAlertUiState.Error("Alert content cannot be empty.")
+            if (currentState.alertContent.isBlank()) {
+                _uiState.value = currentState.copy(
+                    errorMessage = "Alert content cannot be empty."
+                )
                 return@launch
             }
 
-            val targetTime = _targetTime.value
+            val targetTime = currentState.targetTime
             if (targetTime == null || targetTime.toEpochMilliseconds() <= System.currentTimeMillis()) {
-                _uiState.value = AddKnockAlertUiState.Error("Target time must be in the future.")
+                _uiState.value = currentState.copy(
+                    errorMessage = "Target time must be in the future."
+                )
                 return@launch
             }
+
+            _uiState.value = currentState.copy(
+                isLoading = true,
+                errorMessage = null
+            )
 
             val knockAlert = KnockAlert(
                 id = "",
                 ownerId = "",
-                content = _alertContent.value,
+                content = currentState.alertContent,
                 targetTime = targetTime,
                 knockedByUserIds = emptyList()
             )
 
             when (val result = knockAlertRepository.addKnockAlert(knockAlert)) {
                 is KnockAlertResult.Success -> {
-                    _uiState.value = AddKnockAlertUiState.Success
+                    _uiState.value = currentState.copy(
+                        isLoading = false,
+                        isSuccess = true
+                    )
                 }
 
                 is KnockAlertResult.Failure -> {
-                    _uiState.value = AddKnockAlertUiState.Error(
-                        message = when (result.error) {
+                    _uiState.value = currentState.copy(
+                        isLoading = false,
+                        errorMessage = when (result.error) {
                             KnockAlertError.NotAuthenticated ->
                                 "You must be signed in to create an alert."
                             KnockAlertError.Network ->
@@ -78,15 +91,6 @@ class AddKnockAlertViewModel(
     }
 
     fun resetState() {
-        _uiState.value = AddKnockAlertUiState.Idle
-        _alertContent.value = ""
-        _targetTime.value = null
+        _uiState.value = AddKnockAlertUiState()
     }
-}
-
-sealed interface AddKnockAlertUiState {
-    object Idle : AddKnockAlertUiState
-    object Loading : AddKnockAlertUiState
-    object Success : AddKnockAlertUiState
-    data class Error(val message: String) : AddKnockAlertUiState
 }
