@@ -21,6 +21,7 @@ import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import com.sujalkumar.knockme.ui.home.HomeViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.bind
+import org.koin.core.module.dsl.createdAtStart
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -46,13 +47,16 @@ val appModule = module {
         )
     }
 
-    single { CredentialManager.create(androidContext()) }
-    single<FirebaseAuth> { FirebaseAuth.getInstance() }
-    single<FirebaseFirestore> { FirebaseFirestore.getInstance() }
+    single<CredentialManager>(createdAtStart = true) { CredentialManager.create(androidContext()) }
+    single<FirebaseAuth>(createdAtStart = true) { FirebaseAuth.getInstance() }
+    single<FirebaseFirestore>(createdAtStart = true) { FirebaseFirestore.getInstance() }
 
     singleOf(::UserDataSource)
     singleOf(::UserDetailsRepositoryImpl) { bind<UserDetailsRepository>() }
     singleOf(::KnockAlertRepositoryImpl) { bind<KnockAlertRepository>() }
     singleOf(::OtherUsersRepositoryImpl) { bind<OtherUsersRepository>() }
-    singleOf(::AuthRepositoryImpl) { bind<AuthRepository>() }
+    singleOf(::AuthRepositoryImpl) { 
+        bind<AuthRepository>()
+        createdAtStart()
+    }
 }
