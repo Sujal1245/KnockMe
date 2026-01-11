@@ -6,7 +6,6 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.google.gms.google.services)
-    alias(libs.plugins.kotzilla)
 }
 
 android {
@@ -48,7 +47,6 @@ android {
 }
 
 dependencies {
-    implementation(libs.kotzilla.sdk)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
