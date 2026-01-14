@@ -16,12 +16,18 @@ import com.sujalkumar.knockme.domain.repository.AuthRepository
 import com.sujalkumar.knockme.domain.repository.KnockAlertRepository
 import com.sujalkumar.knockme.domain.repository.OtherUsersRepository
 import com.sujalkumar.knockme.domain.repository.UserDetailsRepository
+import com.sujalkumar.knockme.domain.usecase.AddKnockAlertUseCase
+import com.sujalkumar.knockme.domain.usecase.KnockOnAlertUseCase
+import com.sujalkumar.knockme.domain.usecase.ObserveCurrentUserUseCase
+import com.sujalkumar.knockme.domain.usecase.ObserveFeedAlertsUseCase
+import com.sujalkumar.knockme.domain.usecase.ObserveMyAlertsUseCase
 import com.sujalkumar.knockme.ui.addalert.AddKnockAlertViewModel
 import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import com.sujalkumar.knockme.ui.home.HomeViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.createdAtStart
+import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -33,6 +39,12 @@ val appModule = module {
     viewModelOf(::HomeViewModel)
     viewModelOf(::AuthViewModel)
     viewModelOf(::AddKnockAlertViewModel)
+
+    factoryOf(::ObserveCurrentUserUseCase)
+    factoryOf(::ObserveFeedAlertsUseCase)
+    factoryOf(::ObserveMyAlertsUseCase)
+    factoryOf(::AddKnockAlertUseCase)
+    factoryOf(::KnockOnAlertUseCase)
 
     single<DataStore<AppUser?>> {
         DataStoreFactory.create(
@@ -55,7 +67,7 @@ val appModule = module {
     singleOf(::UserDetailsRepositoryImpl) { bind<UserDetailsRepository>() }
     singleOf(::KnockAlertRepositoryImpl) { bind<KnockAlertRepository>() }
     singleOf(::OtherUsersRepositoryImpl) { bind<OtherUsersRepository>() }
-    singleOf(::AuthRepositoryImpl) { 
+    singleOf(::AuthRepositoryImpl) {
         bind<AuthRepository>()
         createdAtStart()
     }

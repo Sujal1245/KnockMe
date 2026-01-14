@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import com.sujalkumar.knockme.ui.model.AlertOwner
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -29,7 +28,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.TimeToLeave
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
@@ -58,6 +57,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.sujalkumar.knockme.domain.model.KnockAlert
 import com.sujalkumar.knockme.domain.model.User
+import com.sujalkumar.knockme.ui.model.AlertOwner
 import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
 import com.sujalkumar.knockme.util.TimeUtils
 import org.koin.androidx.compose.koinViewModel
@@ -79,7 +79,10 @@ fun HomeRoute(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
         onKnockAction = { alert -> homeViewModel.knockOnAlert(alert.id) },
-        onSignOut = onLogout,
+        onSignOut = {
+            homeViewModel.onLogoutRequest()
+            onLogout()
+        },
         onNavigateToAddAlert = onNavigateToAddAlert,
         modifier = modifier
     )
@@ -130,7 +133,14 @@ internal fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (uiState.user != null) {
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularWavyProgressIndicator()
+                }
+            } else {
                 HomeScreenSuccessContent(
                     user = uiState.user,
                     myKnockAlerts = uiState.myKnockAlerts,
@@ -139,13 +149,6 @@ internal fun HomeScreen(
                     onNavigateToAddAlert = onNavigateToAddAlert,
                     modifier = Modifier
                 )
-            } else {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
             }
         }
     }
@@ -157,7 +160,7 @@ internal fun HomeScreen(
 )
 @Composable
 internal fun HomeScreenSuccessContent(
-    user: User,
+    user: User?,
     myKnockAlerts: List<KnockAlert>,
     feedKnockAlerts: List<DisplayableKnockAlert>,
     onKnockAction: (KnockAlert) -> Unit,
@@ -182,7 +185,7 @@ internal fun HomeScreenSuccessContent(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "Hello, ${user.displayName?.takeIf { it.isNotBlank() } ?: "User"}!",
+                text = "Hello, ${user?.displayName?.takeIf { it.isNotBlank() } ?: "User"}!",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -321,7 +324,7 @@ internal fun HomeScreenSuccessContent(
 
                             KnockAlertItem(
                                 displayableAlert = displayableAlert,
-                                currentUserId = user.uid,
+                                currentUserId = user?.uid,
                                 onKnockAction = onKnockAction,
                                 shape = shape
                             )

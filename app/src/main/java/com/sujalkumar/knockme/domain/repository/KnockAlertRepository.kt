@@ -6,13 +6,19 @@ import kotlinx.coroutines.flow.Flow
 
 interface KnockAlertRepository {
 
-    fun observeKnockAlerts(): Flow<List<KnockAlert>>
+    fun observeAllAlerts(): Flow<List<KnockAlert>>
 
-    fun observeMyKnockAlerts(): Flow<List<KnockAlert>>
+    fun observeAlertsByOwner(userId: String): Flow<List<KnockAlert>>
 
-    suspend fun addKnockAlert(alert: KnockAlert): KnockAlertResult
+    suspend fun addKnockAlert(
+        alert: KnockAlert,
+        userId: String
+    ): KnockAlertResult
 
-    suspend fun knockOnAlert(alertId: String): KnockAlertResult
+    suspend fun knockOnAlert(
+        alertId: String,
+        userId: String
+    ): KnockAlertResult
 
     suspend fun deleteKnockAlert(alertId: String): KnockAlertResult
 }

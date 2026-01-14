@@ -2,115 +2,105 @@ package com.sujalkumar.knockme.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sujalkumar.knockme.domain.model.KnockAlert
-import com.sujalkumar.knockme.domain.model.KnockAlertResult
-import com.sujalkumar.knockme.domain.repository.AuthRepository
-import com.sujalkumar.knockme.domain.repository.KnockAlertRepository
 import com.sujalkumar.knockme.domain.repository.OtherUsersRepository
+import com.sujalkumar.knockme.domain.usecase.KnockOnAlertUseCase
+import com.sujalkumar.knockme.domain.usecase.ObserveCurrentUserUseCase
+import com.sujalkumar.knockme.domain.usecase.ObserveFeedAlertsUseCase
+import com.sujalkumar.knockme.domain.usecase.ObserveMyAlertsUseCase
 import com.sujalkumar.knockme.ui.model.AlertOwner
 import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
-    authRepository: AuthRepository,
-    private val knockAlertRepository: KnockAlertRepository,
+    observeCurrentUser: ObserveCurrentUserUseCase,
+    observeFeedAlerts: ObserveFeedAlertsUseCase,
+    observeMyAlerts: ObserveMyAlertsUseCase,
+    private val knockOnAlertUseCase: KnockOnAlertUseCase,
     private val otherUsersRepository: OtherUsersRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HomeUiState(user = null))
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    private val loadingState = MutableStateFlow(true)
 
-    private val ownersMap = MutableStateFlow<Map<String, AlertOwner?>>(emptyMap())
+    private val ownersMap = MutableStateFlow<Map<String, AlertOwner>>(emptyMap())
     private val observedOwnerIds = mutableSetOf<String>()
 
-    private val user = authRepository.currentUser.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = null
-    )
-
-    private val alertsFlow = user
-        .flatMapLatest { currentUser ->
-            if (currentUser == null) {
-                flowOf(emptyList())
-            } else {
-                knockAlertRepository.observeKnockAlerts()
-                    .catch { emit(emptyList()) }
-            }
-        }
-
-    init {
-        combine(user, alertsFlow, ownersMap) { user, alerts, owners ->
-            println(owners)
-
+    val uiState: StateFlow<HomeUiState> =
+        combine(
+            observeCurrentUser(),
+            observeFeedAlerts().onStart { emit(emptyList()) },
+            observeMyAlerts().onStart { emit(emptyList()) },
+            ownersMap,
+            loadingState
+        ) { user, feedAlerts, myAlerts, owners, isLoading ->
             val now = System.currentTimeMillis()
 
-            val activeAlerts = alerts.filter {
+            val readyFeedAlerts = feedAlerts.filter {
                 it.targetTime.toEpochMilliseconds() <= now
-            }
-
-            val (myKnockAlerts, feedKnockAlertsSource) = if (user != null) {
-                activeAlerts.partition { it.ownerId == user.uid }
-            } else {
-                emptyList<KnockAlert>() to activeAlerts
             }
 
             HomeUiState(
                 user = user,
-                myKnockAlerts = myKnockAlerts,
-                feedKnockAlerts = feedKnockAlertsSource.map { alert ->
+                myKnockAlerts = myAlerts,
+                feedKnockAlerts = readyFeedAlerts.map { alert ->
                     DisplayableKnockAlert(
                         alert = alert,
                         owner = owners[alert.ownerId]
                     )
-                }
+                },
+                isLoading = isLoading
             )
         }
-            .catch { /* ignore transient Firestore permission errors during auth warm-up */ }
-            .onEach { newState ->
-                _uiState.value = newState
-            }
-            .launchIn(viewModelScope)
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = HomeUiState(
+                    user = null,
+                    isLoading = true
+                )
+            )
+
+    init {
+        viewModelScope.launch {
+            delay(3.seconds)
+            loadingState.value = false
+        }
 
         uiState
-            .map {
-                it.feedKnockAlerts.map { displayableKnockAlert ->
-                    displayableKnockAlert.alert.ownerId
-                }.distinct()
+            .map { state ->
+                state.feedKnockAlerts
+                    .map { it.alert.ownerId }
+                    .distinct()
             }
             .onEach { ownerIds ->
-                if (user.value == null) return@onEach
-
                 ownerIds
                     .filterNot { observedOwnerIds.contains(it) }
                     .forEach { ownerId ->
                         observedOwnerIds.add(ownerId)
                         otherUsersRepository.observeUser(ownerId)
-                            .onEach { owner ->
-                                ownersMap.update { current ->
-                                    current + (
-                                        ownerId to owner?.let {
-                                            AlertOwner(
-                                                displayName = it.displayName,
-                                                photoUrl = it.photoUrl
-                                            )
-                                        }
-                                    )
+                            .onEach { user ->
+                                user?.let {
+                                    ownersMap.update { current ->
+                                        current + (
+                                                ownerId to AlertOwner(
+                                                    displayName = it.displayName,
+                                                    photoUrl = it.photoUrl
+                                                )
+                                                )
+                                    }
                                 }
                             }
                             .launchIn(viewModelScope)
@@ -119,36 +109,15 @@ class HomeViewModel(
             .launchIn(viewModelScope)
     }
 
-
     fun knockOnAlert(alertId: String) {
         viewModelScope.launch {
-            val currentFeed = _uiState.value.feedKnockAlerts
-            val alertIndex = currentFeed.indexOfFirst { it.alert.id == alertId }
-            if (alertIndex == -1) return@launch
+            knockOnAlertUseCase(alertId)
+        }
+    }
 
-            val displayableAlert = currentFeed[alertIndex]
-
-            if (displayableAlert.hasKnocked(_uiState.value.user?.uid)) return@launch
-
-            // Optimistic update
-            val updatedFeed = currentFeed.toMutableList().apply {
-                val updatedAlert = displayableAlert.alert.copy(
-                    knockedByUserIds = displayableAlert.alert.knockedByUserIds + _uiState.value.user!!.uid
-                )
-                this[alertIndex] = displayableAlert.copy(alert = updatedAlert)
-            }
-            _uiState.value = _uiState.value.copy(feedKnockAlerts = updatedFeed)
-
-            when (knockAlertRepository.knockOnAlert(alertId)) {
-                is KnockAlertResult.Success -> Unit
-                is KnockAlertResult.Failure -> {
-                    // revert optimistic update
-                    val revertedFeed = currentFeed.toMutableList().apply {
-                        this[alertIndex] = displayableAlert
-                    }
-                    _uiState.value = _uiState.value.copy(feedKnockAlerts = revertedFeed)
-                }
-            }
+    fun onLogoutRequest() {
+        viewModelScope.launch {
+            loadingState.value = true
         }
     }
 }

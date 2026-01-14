@@ -7,5 +7,6 @@ import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
 data class HomeUiState(
     val user: User?,
     val myKnockAlerts: List<KnockAlert> = emptyList(),
-    val feedKnockAlerts: List<DisplayableKnockAlert> = emptyList()
+    val feedKnockAlerts: List<DisplayableKnockAlert> = emptyList(),
+    val isLoading: Boolean = true
 )

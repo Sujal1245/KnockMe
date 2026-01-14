@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.sujalkumar.knockme.domain.model.KnockAlert
 import com.sujalkumar.knockme.domain.model.KnockAlertError
 import com.sujalkumar.knockme.domain.model.KnockAlertResult
-import com.sujalkumar.knockme.domain.repository.KnockAlertRepository
+import com.sujalkumar.knockme.domain.usecase.AddKnockAlertUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import kotlin.time.Instant
 
 class AddKnockAlertViewModel(
-    private val knockAlertRepository: KnockAlertRepository
+    private val addKnockAlertUseCase: AddKnockAlertUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddKnockAlertUiState())
@@ -65,7 +65,7 @@ class AddKnockAlertViewModel(
                 knockedByUserIds = emptyList()
             )
 
-            when (val result = knockAlertRepository.addKnockAlert(knockAlert)) {
+            when (val result = addKnockAlertUseCase(knockAlert)) {
                 is KnockAlertResult.Success -> {
                     _uiState.value = currentState.copy(
                         isLoading = false,
