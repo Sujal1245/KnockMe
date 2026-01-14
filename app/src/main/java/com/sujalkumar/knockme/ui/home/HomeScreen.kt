@@ -2,11 +2,13 @@ package com.sujalkumar.knockme.ui.home
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,11 +29,13 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.TimeToLeave
-import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialShapes
@@ -42,17 +46,21 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.sujalkumar.knockme.domain.model.KnockAlert
@@ -61,6 +69,10 @@ import com.sujalkumar.knockme.ui.model.AlertOwner
 import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
 import com.sujalkumar.knockme.util.TimeUtils
 import org.koin.androidx.compose.koinViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import kotlin.math.absoluteValue
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
@@ -106,18 +118,25 @@ internal fun HomeScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(
-                title = { Text("KnockMe") },
-                actions = {
-                    IconButton(
-                        onClick = onSignOut
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.TimeToLeave,
-                            contentDescription = "Logout Icon"
+            Surface(tonalElevation = 3.dp) {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Text(
+                            text = "KnockMe",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold
                         )
+                    },
+                    actions = {
+                        IconButton(onClick = onSignOut) {
+                            Icon(
+                                imageVector = Icons.Outlined.TimeToLeave,
+                                contentDescription = "Logout"
+                            )
+                        }
                     }
-                })
+                )
+            }
         },
         floatingActionButton = {
             if (showFab) {
@@ -173,34 +192,49 @@ internal fun HomeScreenSuccessContent(
             .padding(16.dp),
         horizontalAlignment = Alignment.Start
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            tonalElevation = 2.dp,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(
-                imageVector = Icons.Filled.Person,
-                contentDescription = "User greeting",
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Hello, ${user?.displayName?.takeIf { it.isNotBlank() } ?: "User"}!",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Row(
+                modifier = Modifier.padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "Welcome back",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = user?.displayName ?: "User",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(24.dp))
 
         Text(
             text = "Your KnockAlerts",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(bottom = 8.dp)
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(bottom = 12.dp)
         )
         if (myKnockAlerts.isEmpty()) {
             OutlinedCard(
                 onClick = onNavigateToAddAlert,
+                shape = MaterialTheme.shapes.large,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -218,45 +252,74 @@ internal fun HomeScreenSuccessContent(
                     )
                     Text(
                         text = "Create your first KnockAlert",
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
         } else {
             val pagerState = rememberPagerState(pageCount = { myKnockAlerts.size })
-            Column(horizontalAlignment = Alignment.CenterHorizontally) { // Column to center Pager and Dots
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 HorizontalPager(
                     state = pagerState,
+                    contentPadding = PaddingValues(horizontal = 32.dp),
+                    pageSpacing = 12.dp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp)
+                        .height(150.dp)
                 ) { page ->
+                    val pageOffset by remember {
+                        derivedStateOf {
+                            ((pagerState.currentPage - page) +
+                                    pagerState.currentPageOffsetFraction).absoluteValue
+                        }
+                    }
+
+                    val scale = lerp(
+                        start = 0.92f,
+                        stop = 1f,
+                        fraction = 1f - pageOffset.coerceIn(0f, 1f)
+                    )
+
                     MyKnockAlertCard(
                         alert = myKnockAlerts[page],
-                        modifier = Modifier.padding(horizontal = 4.dp)
+                        modifier = Modifier.graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                        }
                     )
                 }
 
                 if (pagerState.pageCount > 1) {
                     Row(
-                        Modifier
-                            .height(24.dp)
-                            .fillMaxWidth(),
+                        modifier = Modifier.padding(top = 12.dp),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        repeat(pagerState.pageCount) { iteration ->
-                            val color =
-                                if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(
-                                    alpha = 0.3f
-                                )
-                            val dotSize = if (pagerState.currentPage == iteration) 10.dp else 8.dp
+                        repeat(pagerState.pageCount) { index ->
+                            val selected = pagerState.currentPage == index
+
+                            val width by animateDpAsState(
+                                targetValue = if (selected) 20.dp else 6.dp,
+                                label = "PagerIndicatorWidth"
+                            )
+
+                            val color by animateColorAsState(
+                                targetValue =
+                                    if (selected)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                label = "PagerIndicatorColor"
+                            )
+
                             Box(
                                 modifier = Modifier
                                     .padding(horizontal = 4.dp)
-                                    .clip(CircleShape)
+                                    .height(6.dp)
+                                    .width(width)
+                                    .clip(RoundedCornerShape(3.dp))
                                     .background(color)
-                                    .size(dotSize)
                             )
                         }
                     }
@@ -270,19 +333,21 @@ internal fun HomeScreenSuccessContent(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            shape = MaterialTheme.shapes.extraLargeIncreased
+            shape = MaterialTheme.shapes.extraLarge,
+            tonalElevation = 1.dp
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(12.dp)
             ) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(4.dp))
 
                 Text(
                     text = "KnockAlerts from Others",
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(bottom = 12.dp)
                 )
                 if (feedKnockAlerts.isEmpty()) {
                     Text(
@@ -342,9 +407,10 @@ internal fun MyKnockAlertCard(
     alert: KnockAlert,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    Surface(
         modifier = modifier.fillMaxSize(),
-        shape = MaterialTheme.shapes.medium
+        shape = MaterialTheme.shapes.extraLarge,
+        tonalElevation = 3.dp
     ) {
         Column(
             modifier = Modifier
@@ -355,15 +421,55 @@ internal fun MyKnockAlertCard(
             Text(
                 text = alert.content,
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 8.dp),
+                fontWeight = FontWeight.SemiBold,
                 maxLines = 3,
-                minLines = 2
+                overflow = TextOverflow.Ellipsis
             )
-            Text(
-                text = "Active since: ${TimeUtils.toRelativeTime(alert.targetTime.toEpochMilliseconds())}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+
+            Spacer(Modifier.height(12.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Spacer(Modifier.height(12.dp))
+
+            // Status chip + time
+            val now = Clock.System.now().toEpochMilliseconds()
+            val isActive = alert.targetTime.toEpochMilliseconds() <= now
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (isActive)
+                        MaterialTheme.colorScheme.primaryContainer
+                    else
+                        MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Text(
+                        text = if (isActive) "ACTIVE" else "UPCOMING",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isActive)
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        else
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                val formattedTime = remember(alert.targetTime) {
+                    SimpleDateFormat(
+                        "dd MMM yyyy, hh:mm a",
+                        Locale.getDefault()
+                    ).format(Date(alert.targetTime.toEpochMilliseconds()))
+                }
+
+                Text(
+                    text = formattedTime,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -380,7 +486,10 @@ internal fun KnockAlertItem(
     val alert = displayableAlert.alert
     OutlinedCard(
         modifier = modifier.fillMaxWidth(),
-        shape = shape
+        shape = shape,
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Row(
             modifier = Modifier
@@ -400,7 +509,8 @@ internal fun KnockAlertItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = alert.content,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
                 Text(
