@@ -69,12 +69,11 @@ import com.sujalkumar.knockme.ui.model.AlertOwner
 import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
 import com.sujalkumar.knockme.util.TimeUtils
 import org.koin.androidx.compose.koinViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.sujalkumar.knockme.ui.model.MyKnockAlertUi
+import androidx.compose.material3.LinearWavyProgressIndicator
 import kotlin.math.absoluteValue
+import android.text.format.DateFormat
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 @Composable
@@ -174,13 +173,12 @@ internal fun HomeScreen(
 }
 
 @OptIn(
-    ExperimentalFoundationApi::class, ExperimentalTime::class,
     ExperimentalMaterial3ExpressiveApi::class
 )
 @Composable
 internal fun HomeScreenSuccessContent(
     user: User?,
-    myKnockAlerts: List<KnockAlert>,
+    myKnockAlerts: List<MyKnockAlertUi>,
     feedKnockAlerts: List<DisplayableKnockAlert>,
     onKnockAction: (KnockAlert) -> Unit,
     onNavigateToAddAlert: () -> Unit,
@@ -282,7 +280,7 @@ internal fun HomeScreenSuccessContent(
                     )
 
                     MyKnockAlertCard(
-                        alert = myKnockAlerts[page],
+                        myAlert = myKnockAlerts[page],
                         modifier = Modifier.graphicsLayer {
                             scaleX = scale
                             scaleY = scale
@@ -401,10 +399,10 @@ internal fun HomeScreenSuccessContent(
     }
 }
 
-@OptIn(ExperimentalTime::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun MyKnockAlertCard(
-    alert: KnockAlert,
+    myAlert: MyKnockAlertUi,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -419,7 +417,7 @@ internal fun MyKnockAlertCard(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = alert.content,
+                text = myAlert.alert.content,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 3,
@@ -431,24 +429,21 @@ internal fun MyKnockAlertCard(
             Spacer(Modifier.height(12.dp))
 
             // Status chip + time
-            val now = Clock.System.now().toEpochMilliseconds()
-            val isActive = alert.targetTime.toEpochMilliseconds() <= now
-
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = if (isActive)
+                    color = if (myAlert.isActive)
                         MaterialTheme.colorScheme.primaryContainer
                     else
                         MaterialTheme.colorScheme.secondaryContainer
                 ) {
                     Text(
-                        text = if (isActive) "ACTIVE" else "UPCOMING",
+                        text = if (myAlert.isActive) "ACTIVE" else "UPCOMING",
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (isActive)
+                        color = if (myAlert.isActive)
                             MaterialTheme.colorScheme.onPrimaryContainer
                         else
                             MaterialTheme.colorScheme.onSecondaryContainer
@@ -457,11 +452,11 @@ internal fun MyKnockAlertCard(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                val formattedTime = remember(alert.targetTime) {
-                    SimpleDateFormat(
+                val formattedTime = remember(myAlert.alert.targetTime) {
+                    DateFormat.format(
                         "dd MMM yyyy, hh:mm a",
-                        Locale.getDefault()
-                    ).format(Date(alert.targetTime.toEpochMilliseconds()))
+                        myAlert.alert.targetTime.toEpochMilliseconds()
+                    ).toString()
                 }
 
                 Text(
@@ -470,11 +465,19 @@ internal fun MyKnockAlertCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+
+            if (!myAlert.isActive) {
+                Spacer(Modifier.height(8.dp))
+                LinearWavyProgressIndicator(
+                    progress = { myAlert.progress },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }
 
-@OptIn(ExperimentalTime::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun KnockAlertItem(
     displayableAlert: DisplayableKnockAlert,
@@ -570,7 +573,6 @@ fun HomeScreenPreviewNoUser() {
     )
 }
 
-@OptIn(ExperimentalTime::class)
 @Preview(showBackground = true, name = "Home Screen - User With Alerts")
 @Composable
 fun HomeScreenPreviewWithUserAndAlerts() {
@@ -580,26 +582,41 @@ fun HomeScreenPreviewWithUserAndAlerts() {
     )
     val now = Clock.System.now().toEpochMilliseconds()
     val myAlerts = listOf(
-        KnockAlert(
-            id = "myAlert1",
-            ownerId = "currentUser123",
-            content = "This is my first alert, just a reminder for myself.",
-            targetTime = Instant.fromEpochMilliseconds(now - 200000),
-            knockedByUserIds = emptyList()
+        MyKnockAlertUi(
+            alert = KnockAlert(
+                id = "myAlert1",
+                ownerId = "currentUser123",
+                content = "This is my first alert, just a reminder for myself.",
+                createdAt = Instant.fromEpochMilliseconds(now - 400000),
+                targetTime = Instant.fromEpochMilliseconds(now - 200000),
+                knockedByUserIds = emptyList()
+            ),
+            progress = 1f,
+            isActive = true
         ),
-        KnockAlert(
-            id = "myAlert2",
-            ownerId = "currentUser123",
-            content = "Another personal alert for the horizontal pager.",
-            targetTime = Instant.fromEpochMilliseconds(now - 150000),
-            knockedByUserIds = emptyList()
+        MyKnockAlertUi(
+            alert = KnockAlert(
+                id = "myAlert2",
+                ownerId = "currentUser123",
+                content = "Another personal alert for the horizontal pager.",
+                createdAt = Instant.fromEpochMilliseconds(now - 300000),
+                targetTime = Instant.fromEpochMilliseconds(now + 60000),
+                knockedByUserIds = emptyList()
+            ),
+            progress = 0.7f,
+            isActive = false
         ),
-        KnockAlert(
-            id = "myAlert3",
-            ownerId = "currentUser123",
-            content = "A third alert to test the pager dots properly.",
-            targetTime = Instant.fromEpochMilliseconds(now - 100000),
-            knockedByUserIds = emptyList()
+        MyKnockAlertUi(
+            alert = KnockAlert(
+                id = "myAlert3",
+                ownerId = "currentUser123",
+                content = "A third alert to test the pager dots properly.",
+                createdAt = Instant.fromEpochMilliseconds(now - 200000),
+                targetTime = Instant.fromEpochMilliseconds(now + 120000),
+                knockedByUserIds = emptyList()
+            ),
+            progress = 0.3f,
+            isActive = false
         )
     )
     val feedAlerts = listOf(
@@ -608,6 +625,7 @@ fun HomeScreenPreviewWithUserAndAlerts() {
                 id = "feedAlert1",
                 ownerId = "otherUser456",
                 content = "Alert from another user, visible in the main feed.",
+                createdAt = Instant.fromEpochMilliseconds(now - 150000),
                 targetTime = Instant.fromEpochMilliseconds(now - 100000),
                 knockedByUserIds = listOf("someUserId")
             ),
@@ -621,6 +639,7 @@ fun HomeScreenPreviewWithUserAndAlerts() {
                 id = "feedAlert2",
                 ownerId = "anotherUser789",
                 content = "Second alert in the feed from someone else.",
+                createdAt = Instant.fromEpochMilliseconds(now - 80000),
                 targetTime = Instant.fromEpochMilliseconds(now - 50000),
                 knockedByUserIds = emptyList()
             ),
@@ -643,7 +662,6 @@ fun HomeScreenPreviewWithUserAndAlerts() {
     )
 }
 
-@OptIn(ExperimentalTime::class)
 @Preview(showBackground = true, name = "Home Screen - User, No Own Alerts")
 @Composable
 fun HomeScreenPreviewUserNoOwnAlerts() {
@@ -658,6 +676,7 @@ fun HomeScreenPreviewUserNoOwnAlerts() {
                 id = "feedAlert1",
                 ownerId = "otherUser456",
                 content = "Feed alert when user has no own alerts.",
+                createdAt = Instant.fromEpochMilliseconds(now - 200000),
                 targetTime = Instant.fromEpochMilliseconds(now - 100000),
                 knockedByUserIds = emptyList()
             ),

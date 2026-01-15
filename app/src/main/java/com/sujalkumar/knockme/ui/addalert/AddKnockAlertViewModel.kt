@@ -61,6 +61,7 @@ class AddKnockAlertViewModel(
                 id = "",
                 ownerId = "",
                 content = currentState.alertContent,
+                createdAt = Instant.fromEpochMilliseconds(0),
                 targetTime = targetTime,
                 knockedByUserIds = emptyList()
             )

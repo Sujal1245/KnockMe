@@ -9,6 +9,7 @@ import com.sujalkumar.knockme.domain.usecase.ObserveFeedAlertsUseCase
 import com.sujalkumar.knockme.domain.usecase.ObserveMyAlertsUseCase
 import com.sujalkumar.knockme.ui.model.AlertOwner
 import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
+import com.sujalkumar.knockme.ui.model.MyKnockAlertUi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,9 +53,30 @@ class HomeViewModel(
                 it.targetTime.toEpochMilliseconds() <= now
             }
 
+            val myAlertsUi = myAlerts.map { alert ->
+                val createdAtMillis = alert.createdAt.toEpochMilliseconds()
+                val targetMillis = alert.targetTime.toEpochMilliseconds()
+
+                val totalDuration = targetMillis - createdAtMillis
+                val elapsed = now - createdAtMillis
+
+                val progress =
+                    if (totalDuration > 0)
+                        (elapsed.toFloat() / totalDuration).coerceIn(0f, 1f)
+                    else 1f
+
+                val isActive = targetMillis <= now
+
+                MyKnockAlertUi(
+                    alert = alert,
+                    progress = progress,
+                    isActive = isActive
+                )
+            }
+
             HomeUiState(
                 user = user,
-                myKnockAlerts = myAlerts,
+                myKnockAlerts = myAlertsUi,
                 feedKnockAlerts = readyFeedAlerts.map { alert ->
                     DisplayableKnockAlert(
                         alert = alert,

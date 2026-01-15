@@ -9,16 +9,18 @@ fun FirebaseKnockAlert.toKnockAlert(): KnockAlert {
         id = id,
         ownerId = ownerId,
         content = content,
+        createdAt = Instant.fromEpochMilliseconds(createdAtTimestamp),
         targetTime = Instant.fromEpochMilliseconds(targetTimestamp),
         knockedByUserIds = knockedByUids
     )
 }
 
-fun KnockAlert.toFirebaseKnockAlert(): FirebaseKnockAlert{
+fun KnockAlert.toFirebaseKnockAlert(): FirebaseKnockAlert {
     return FirebaseKnockAlert(
         id = id,
         ownerId = ownerId,
         content = content,
+        createdAtTimestamp = createdAt.toEpochMilliseconds(),
         targetTimestamp = targetTime.toEpochMilliseconds(),
         knockedByUids = knockedByUserIds
     )

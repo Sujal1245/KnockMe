@@ -6,6 +6,7 @@ data class KnockAlert(
     val id: String,
     val ownerId: String,
     val content: String,
+    val createdAt: Instant,
     val targetTime: Instant,
     val knockedByUserIds: List<String>
 )

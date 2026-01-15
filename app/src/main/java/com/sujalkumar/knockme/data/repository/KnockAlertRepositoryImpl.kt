@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.CancellationException
+import kotlin.time.Clock
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class KnockAlertRepositoryImpl(
@@ -35,7 +36,8 @@ class KnockAlertRepositoryImpl(
             val newAlertRef = knockAlertsCollection.document()
             val alertWithId = alert.copy(
                 id = newAlertRef.id,
-                ownerId = userId
+                ownerId = userId,
+                createdAt = Clock.System.now()
             )
             newAlertRef.set(alertWithId.toFirebaseKnockAlert()).await()
             KnockAlertResult.Success
