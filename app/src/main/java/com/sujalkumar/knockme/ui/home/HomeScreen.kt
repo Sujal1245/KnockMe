@@ -1,8 +1,10 @@
 package com.sujalkumar.knockme.ui.home
 
+import android.text.format.DateFormat
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,17 +28,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.TimeToLeave
+import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialShapes
@@ -56,6 +60,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -67,12 +72,10 @@ import com.sujalkumar.knockme.domain.model.KnockAlert
 import com.sujalkumar.knockme.domain.model.User
 import com.sujalkumar.knockme.ui.model.AlertOwner
 import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
+import com.sujalkumar.knockme.ui.model.MyKnockAlertUi
 import com.sujalkumar.knockme.util.TimeUtils
 import org.koin.androidx.compose.koinViewModel
-import com.sujalkumar.knockme.ui.model.MyKnockAlertUi
-import androidx.compose.material3.LinearWavyProgressIndicator
 import kotlin.math.absoluteValue
-import android.text.format.DateFormat
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -399,79 +402,133 @@ internal fun HomeScreenSuccessContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun MyKnockAlertCard(
     myAlert: MyKnockAlertUi,
     modifier: Modifier = Modifier
 ) {
+    val containerColor by animateColorAsState(
+        targetValue = if (myAlert.isActive)
+            MaterialTheme.colorScheme.primaryContainer
+        else
+            MaterialTheme.colorScheme.surfaceContainer,
+        label = "AlertCardColor"
+    )
+
     Surface(
         modifier = modifier.fillMaxSize(),
-        shape = MaterialTheme.shapes.extraLarge,
-        tonalElevation = 3.dp
+        shape = RoundedCornerShape(28.dp),
+        color = containerColor,
+        tonalElevation = 1.dp
     ) {
         Column(
             modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
+                .fillMaxSize()
+                .padding(20.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
+
+            /* ---------- CONTENT ---------- */
+
             Text(
                 text = myAlert.alert.content,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(Modifier.height(12.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            Spacer(Modifier.height(12.dp))
+            /* ---------- FOOTER ---------- */
 
-            // Status chip + time
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = if (myAlert.isActive)
-                        MaterialTheme.colorScheme.primaryContainer
-                    else
-                        MaterialTheme.colorScheme.secondaryContainer
-                ) {
+            if (myAlert.isActive) {
+
+                if (myAlert.alert.knockedByUserIds.isEmpty()) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Android,
+                            contentDescription = "Android"
+                        )
+                        Text(
+                            text = "No one has knocked yet",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+                } else {
+                    Button(
+                        onClick = { }
+                    ) {
+                        Text("Knocked by ${myAlert.alert.knockedByUserIds.size} users")
+                    }
+                }
+
+                // ACTIVE → relative time
+                Text(
+                    text = "Active for ${
+                        TimeUtils.toRelativeTime(
+                            myAlert.alert.targetTime.toEpochMilliseconds()
+                        )
+                    }",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            } else {
+                // UPCOMING → fancy progress
+                val animatedProgress by animateFloatAsState(
+                    targetValue = myAlert.progress,
+                    label = "AlertProgress"
+                )
+
+                Column {
+                    // Target time (subtle)
+                    val formattedTime = remember(myAlert.alert.targetTime) {
+                        DateFormat.format(
+                            "EEE, dd MMM • hh:mm a",
+                            myAlert.alert.targetTime.toEpochMilliseconds()
+                        ).toString()
+                    }
+
                     Text(
-                        text = if (myAlert.isActive) "ACTIVE" else "UPCOMING",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        text = formattedTime,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(Modifier.height(14.dp))
+
+                    // Prominent progress bar
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            )
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(animatedProgress)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    MaterialTheme.colorScheme.primary
+                                )
+                        )
+                    }
+
+                    Spacer(Modifier.height(6.dp))
+
+                    Text(
+                        text = "${(animatedProgress * 100).toInt()}% ready",
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (myAlert.isActive)
-                            MaterialTheme.colorScheme.onPrimaryContainer
-                        else
-                            MaterialTheme.colorScheme.onSecondaryContainer
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                val formattedTime = remember(myAlert.alert.targetTime) {
-                    DateFormat.format(
-                        "dd MMM yyyy, hh:mm a",
-                        myAlert.alert.targetTime.toEpochMilliseconds()
-                    ).toString()
-                }
-
-                Text(
-                    text = formattedTime,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            if (!myAlert.isActive) {
-                Spacer(Modifier.height(8.dp))
-                LinearWavyProgressIndicator(
-                    progress = { myAlert.progress },
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
         }
     }
