@@ -20,9 +20,11 @@ import com.sujalkumar.knockme.domain.usecase.AddKnockAlertUseCase
 import com.sujalkumar.knockme.domain.usecase.KnockOnAlertUseCase
 import com.sujalkumar.knockme.domain.usecase.ObserveFeedAlertsUseCase
 import com.sujalkumar.knockme.domain.usecase.ObserveMyAlertsUseCase
+import com.sujalkumar.knockme.domain.usecase.SignInWithGoogleUseCase
+import com.sujalkumar.knockme.domain.usecase.SignOutUseCase
 import com.sujalkumar.knockme.ui.addalert.AddKnockAlertViewModel
-import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import com.sujalkumar.knockme.ui.home.HomeViewModel
+import com.sujalkumar.knockme.ui.onboarding.OnboardingViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -38,14 +40,16 @@ import java.io.File
 private const val USER_DATA_STORE_FILE_NAME = "app_user.pb"
 
 val appModule = module {
+    viewModelOf(::OnboardingViewModel)
     viewModelOf(::HomeViewModel)
-    viewModelOf(::AuthViewModel)
     viewModelOf(::AddKnockAlertViewModel)
 
     factoryOf(::ObserveFeedAlertsUseCase)
     factoryOf(::ObserveMyAlertsUseCase)
     factoryOf(::AddKnockAlertUseCase)
     factoryOf(::KnockOnAlertUseCase)
+    factoryOf(::SignInWithGoogleUseCase)
+    factoryOf(::SignOutUseCase)
 
     single<DataStore<AppUser?>> {
         DataStoreFactory.create(

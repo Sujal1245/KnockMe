@@ -41,19 +41,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sujalkumar.knockme.R
 import com.sujalkumar.knockme.domain.model.AuthError
-import com.sujalkumar.knockme.ui.auth.AuthState
-import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import com.sujalkumar.knockme.ui.theme.KnockMeTheme
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun OnboardingRoute(
-    viewModel: AuthViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: OnboardingViewModel = koinViewModel()
 ) {
-    val authState by viewModel.authState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     OnboardingScreen(
-        authState = authState,
+        uiState = uiState,
         onClearError = viewModel::clearError,
         onSignInWithGoogle = viewModel::signInWithGoogle,
         modifier = modifier
@@ -63,13 +62,13 @@ fun OnboardingRoute(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun OnboardingScreen(
-    authState: AuthState,
+    uiState: OnboardingUiState,
     onClearError: () -> Unit,
     onSignInWithGoogle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    val errorMessage = when (authState.error) {
+    val errorMessage = when (uiState.error) {
         AuthError.Network -> stringResource(R.string.error_network)
         AuthError.InvalidCredentials -> stringResource(R.string.error_invalid_credentials)
         AuthError.UserCancelled -> null
@@ -101,7 +100,7 @@ internal fun OnboardingScreen(
             contentAlignment = Alignment.Center,
         ) {
             AnimatedVisibility(
-                visible = !authState.isSignedIn,
+                visible = true,
                 modifier = Modifier.align(Alignment.Center)
             ) {
                 Column(
@@ -135,6 +134,7 @@ internal fun OnboardingScreen(
 
                     Button(
                         onClick = onSignInWithGoogle,
+                        enabled = !uiState.isSigningIn,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
@@ -149,7 +149,10 @@ internal fun OnboardingScreen(
                             modifier = Modifier.size(ButtonDefaults.IconSize)
                         )
                         Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                        Text("Continue with Google", fontWeight = FontWeight.Medium)
+                        Text(
+                            text = if (uiState.isSigningIn) "Signing in…" else "Continue with Google",
+                            fontWeight = FontWeight.Medium
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -183,7 +186,7 @@ internal fun OnboardingScreen(
 private fun OnboardingScreenPreview() {
     KnockMeTheme {
         OnboardingScreen(
-            authState = AuthState(),
+            uiState = OnboardingUiState(),
             onClearError = {},
             onSignInWithGoogle = {}
         )
@@ -195,7 +198,7 @@ private fun OnboardingScreenPreview() {
 private fun OnboardingScreenErrorPreview() {
     KnockMeTheme {
         OnboardingScreen(
-            authState = AuthState(error = AuthError.Network),
+            uiState = OnboardingUiState(error = AuthError.Network),
             onClearError = {},
             onSignInWithGoogle = {}
         )

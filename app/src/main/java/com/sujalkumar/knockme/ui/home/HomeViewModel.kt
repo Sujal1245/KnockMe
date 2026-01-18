@@ -7,6 +7,7 @@ import com.sujalkumar.knockme.domain.repository.OtherUsersRepository
 import com.sujalkumar.knockme.domain.usecase.KnockOnAlertUseCase
 import com.sujalkumar.knockme.domain.usecase.ObserveFeedAlertsUseCase
 import com.sujalkumar.knockme.domain.usecase.ObserveMyAlertsUseCase
+import com.sujalkumar.knockme.domain.usecase.SignOutUseCase
 import com.sujalkumar.knockme.ui.model.AlertOwner
 import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
 import com.sujalkumar.knockme.ui.model.MyKnockAlertUi
@@ -31,8 +32,9 @@ import kotlin.time.Duration.Companion.seconds
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
     authRepository: AuthRepository,
-    observeFeedAlerts: ObserveFeedAlertsUseCase,
-    observeMyAlerts: ObserveMyAlertsUseCase,
+    private val signOutUseCase: SignOutUseCase,
+    observeFeedAlertsUseCase: ObserveFeedAlertsUseCase,
+    observeMyAlertsUseCase: ObserveMyAlertsUseCase,
     private val knockOnAlertUseCase: KnockOnAlertUseCase,
     private val otherUsersRepository: OtherUsersRepository
 ) : ViewModel() {
@@ -48,14 +50,14 @@ class HomeViewModel(
         }
     }.onStart { emit(System.currentTimeMillis()) }
 
-    private val feedAlertsState = observeFeedAlerts()
+    private val feedAlertsState = observeFeedAlertsUseCase()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptyList()
         )
 
-    private val myAlertsState = observeMyAlerts()
+    private val myAlertsState = observeMyAlertsUseCase()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -158,9 +160,9 @@ class HomeViewModel(
         }
     }
 
-    fun onLogoutRequest() {
+    fun onSignOut() {
         viewModelScope.launch {
-            loadingState.value = true
+            signOutUseCase()
         }
     }
 }

@@ -82,21 +82,17 @@ import kotlin.time.Instant
 @Composable
 fun HomeRoute(
     modifier: Modifier = Modifier,
-    homeViewModel: HomeViewModel = koinViewModel(),
-    onNavigateToAddAlert: () -> Unit,
-    onLogout: () -> Unit
+    viewModel: HomeViewModel = koinViewModel(),
+    onNavigateToAddAlert: () -> Unit
 ) {
-    val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     HomeScreen(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
-        onKnockAction = { alert -> homeViewModel.knockOnAlert(alert.id) },
-        onSignOut = {
-            homeViewModel.onLogoutRequest()
-            onLogout()
-        },
+        onKnockAction = { alert -> viewModel.knockOnAlert(alert.id) },
+        onSignOut = viewModel::onSignOut,
         onNavigateToAddAlert = onNavigateToAddAlert,
         modifier = modifier
     )

@@ -7,12 +7,10 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import com.sujalkumar.knockme.ui.onboarding.OnboardingRoute
 
 @Composable
 fun AuthNavigation(
-    authViewModel: AuthViewModel,
     modifier: Modifier = Modifier
 ) {
     val authBackStack = rememberNavBackStack(Route.Auth.Onboarding)
@@ -26,7 +24,7 @@ fun AuthNavigation(
         ),
         entryProvider = entryProvider {
             entry<Route.Auth.Onboarding> {
-                OnboardingRoute(viewModel = authViewModel)
+                OnboardingRoute()
             }
         }
     )

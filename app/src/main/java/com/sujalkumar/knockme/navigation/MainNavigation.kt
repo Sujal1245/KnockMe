@@ -8,13 +8,11 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.sujalkumar.knockme.ui.addalert.AddKnockAlertRoute
-import com.sujalkumar.knockme.ui.addalert.AddKnockAlertScreen
 import com.sujalkumar.knockme.ui.home.HomeRoute
 
 @Composable
 fun MainNavigation(
-    modifier: Modifier = Modifier,
-    onLogout: () -> Unit
+    modifier: Modifier = Modifier
 ) {
     val mainBackStack = rememberNavBackStack(Route.Main.Home)
     NavDisplay(
@@ -29,8 +27,7 @@ fun MainNavigation(
                 HomeRoute(
                     onNavigateToAddAlert = {
                         mainBackStack.add(Route.Main.AddKnockAlert)
-                    },
-                    onLogout = onLogout
+                    }
                 )
             }
 

@@ -10,23 +10,18 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.sujalkumar.knockme.ui.auth.AuthViewModel
-import org.koin.androidx.compose.koinViewModel
+import com.sujalkumar.knockme.domain.repository.AuthRepository
+import org.koin.compose.koinInject
 
 @Composable
 fun NavigationRoot(modifier: Modifier = Modifier) {
-    val authViewModel: AuthViewModel = koinViewModel()
-    val authState by authViewModel.authState.collectAsStateWithLifecycle()
+    val authRepository: AuthRepository = koinInject()
+    val currentUser by authRepository.currentUser.collectAsStateWithLifecycle()
 
     val backStack = rememberNavBackStack()
 
-    LaunchedEffect(
-        authState.isCheckingSession,
-        authState.isSignedIn
-    ) {
-        if (authState.isCheckingSession) return@LaunchedEffect
-
-        val targetRoute = if (authState.isSignedIn) {
+    LaunchedEffect(currentUser) {
+        val targetRoute = if (currentUser != null) {
             Route.Main
         } else {
             Route.Auth
@@ -48,11 +43,11 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
             ),
             entryProvider = entryProvider {
                 entry<Route.Auth> {
-                    AuthNavigation(authViewModel = authViewModel)
+                    AuthNavigation()
                 }
 
                 entry<Route.Main> {
-                    MainNavigation(onLogout = authViewModel::signOut)
+                    MainNavigation()
                 }
             }
         )

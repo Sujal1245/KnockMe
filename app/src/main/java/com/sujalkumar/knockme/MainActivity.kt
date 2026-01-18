@@ -6,9 +6,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.sujalkumar.knockme.navigation.NavigationRoot
-import com.sujalkumar.knockme.ui.auth.AuthViewModel
+import androidx.lifecycle.lifecycleScope
+import com.sujalkumar.knockme.domain.repository.AuthRepository
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import com.sujalkumar.knockme.ui.theme.KnockMeTheme
-import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
 
@@ -16,10 +19,17 @@ class MainActivity : ComponentActivity() {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        val authViewModel: AuthViewModel by viewModel()
+        val authRepository: AuthRepository by inject()
+
+        var isCheckingSession = true
+
+        lifecycleScope.launch {
+            authRepository.currentUser.first()
+            isCheckingSession = false
+        }
 
         splashScreen.setKeepOnScreenCondition {
-            authViewModel.authState.value.isCheckingSession
+            isCheckingSession
         }
 
         setContent {
