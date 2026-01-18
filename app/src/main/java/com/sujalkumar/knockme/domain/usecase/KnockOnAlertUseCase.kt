@@ -4,7 +4,6 @@ import com.sujalkumar.knockme.domain.model.KnockAlertResult
 import com.sujalkumar.knockme.domain.model.KnockAlertError
 import com.sujalkumar.knockme.domain.repository.AuthRepository
 import com.sujalkumar.knockme.domain.repository.KnockAlertRepository
-import kotlinx.coroutines.flow.first
 
 class KnockOnAlertUseCase(
     private val authRepository: AuthRepository,
@@ -12,7 +11,7 @@ class KnockOnAlertUseCase(
 ) {
 
     suspend operator fun invoke(alertId: String): KnockAlertResult {
-        val currentUser = authRepository.currentUser.first()
+        val currentUser = authRepository.currentUser.value
             ?: return KnockAlertResult.Failure(KnockAlertError.NotAuthenticated)
 
         return knockAlertRepository.knockOnAlert(

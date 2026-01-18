@@ -1,6 +1,7 @@
 package com.sujalkumar.knockme.data.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
@@ -17,23 +18,25 @@ import com.sujalkumar.knockme.domain.model.AuthResult
 import com.sujalkumar.knockme.domain.model.User
 import com.sujalkumar.knockme.domain.repository.AuthRepository
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.tasks.await
 
 class AuthRepositoryImpl(
     private val applicationContext: Context,
     private val auth: FirebaseAuth,
-    private val credentialManager: CredentialManager
+    private val credentialManager: CredentialManager,
+    externalScope: CoroutineScope
 ) : AuthRepository {
 
-    override val currentUser: Flow<User?> =
+    override val currentUser: StateFlow<User?> =
         callbackFlow {
-            val initialUser = auth.currentUser?.toUser()
-            trySend(initialUser)
-
+            Log.i("AuthRepo", "Attaching FirebaseAuth listener...")
             val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
                 val user = firebaseAuth.currentUser?.toUser()
                 trySend(user)
@@ -42,9 +45,16 @@ class AuthRepositoryImpl(
             auth.addAuthStateListener(listener)
 
             awaitClose {
+                Log.i("AuthRepo", "Removing FirebaseAuth listener...")
                 auth.removeAuthStateListener(listener)
             }
-        }.distinctUntilChanged()
+        }
+            .distinctUntilChanged()
+            .stateIn(
+                scope = externalScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = auth.currentUser?.toUser()
+            )
 
     override suspend fun signInWithGoogle(): AuthResult {
         return try {

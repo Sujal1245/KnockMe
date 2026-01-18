@@ -18,12 +18,14 @@ import com.sujalkumar.knockme.domain.repository.OtherUsersRepository
 import com.sujalkumar.knockme.domain.repository.UserDetailsRepository
 import com.sujalkumar.knockme.domain.usecase.AddKnockAlertUseCase
 import com.sujalkumar.knockme.domain.usecase.KnockOnAlertUseCase
-import com.sujalkumar.knockme.domain.usecase.ObserveCurrentUserUseCase
 import com.sujalkumar.knockme.domain.usecase.ObserveFeedAlertsUseCase
 import com.sujalkumar.knockme.domain.usecase.ObserveMyAlertsUseCase
 import com.sujalkumar.knockme.ui.addalert.AddKnockAlertViewModel
 import com.sujalkumar.knockme.ui.auth.AuthViewModel
 import com.sujalkumar.knockme.ui.home.HomeViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.createdAtStart
@@ -40,7 +42,6 @@ val appModule = module {
     viewModelOf(::AuthViewModel)
     viewModelOf(::AddKnockAlertViewModel)
 
-    factoryOf(::ObserveCurrentUserUseCase)
     factoryOf(::ObserveFeedAlertsUseCase)
     factoryOf(::ObserveMyAlertsUseCase)
     factoryOf(::AddKnockAlertUseCase)
@@ -58,6 +59,8 @@ val appModule = module {
             }
         )
     }
+
+    single { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
 
     single<CredentialManager>(createdAtStart = true) { CredentialManager.create(androidContext()) }
     single<FirebaseAuth>(createdAtStart = true) { FirebaseAuth.getInstance() }
