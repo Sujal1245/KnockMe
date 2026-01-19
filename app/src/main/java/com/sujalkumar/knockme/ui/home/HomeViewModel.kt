@@ -12,6 +12,7 @@ import com.sujalkumar.knockme.ui.model.AlertOwner
 import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
 import com.sujalkumar.knockme.ui.model.MyKnockAlertUi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -42,6 +44,9 @@ class HomeViewModel(
     private val loadingState = MutableStateFlow(true)
     private val ownersMap = MutableStateFlow<Map<String, AlertOwner>>(emptyMap())
     private val observedOwnerIds = mutableSetOf<String>()
+
+    private val _uiEvents = Channel<HomeUiEvent>(Channel.BUFFERED)
+    val uiEvents = _uiEvents.receiveAsFlow()
 
     private val ticker: Flow<Long> = flow {
         while (true) {
@@ -162,7 +167,18 @@ class HomeViewModel(
 
     fun onSignOut() {
         viewModelScope.launch {
-            signOutUseCase()
+            loadingState.value = true
+
+            runCatching {
+                signOutUseCase()
+            }.onFailure { error ->
+                loadingState.value = false
+                _uiEvents.send(
+                    HomeUiEvent.ShowSnackbar(
+                        message = error.message ?: "Failed to sign out"
+                    )
+                )
+            }
         }
     }
 }
