@@ -2,16 +2,15 @@ package com.sujalkumar.knockme.ui.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sujalkumar.knockme.domain.model.AuthError
 import com.sujalkumar.knockme.domain.model.AuthResult
 import com.sujalkumar.knockme.domain.usecase.SignInWithGoogleUseCase
 import com.sujalkumar.knockme.ui.mapper.toUiMessage
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.receiveAsFlow
 
 class OnboardingViewModel(
     private val signInWithGoogleUseCase: SignInWithGoogleUseCase
