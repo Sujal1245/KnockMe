@@ -6,9 +6,12 @@ import com.sujalkumar.knockme.domain.model.KnockAlert
 import com.sujalkumar.knockme.domain.model.KnockAlertError
 import com.sujalkumar.knockme.domain.model.KnockAlertResult
 import com.sujalkumar.knockme.domain.usecase.AddKnockAlertUseCase
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Instant
 
@@ -19,18 +22,19 @@ class AddKnockAlertViewModel(
     private val _uiState = MutableStateFlow(AddKnockAlertUiState())
     val uiState: StateFlow<AddKnockAlertUiState> = _uiState.asStateFlow()
 
+    private val _uiEvents = Channel<AddKnockAlertUiEvent>(Channel.BUFFERED)
+    val uiEvents = _uiEvents.receiveAsFlow()
+
     fun onAlertContentChanged(content: String) {
-        _uiState.value = _uiState.value.copy(
-            alertContent = content,
-            errorMessage = null
-        )
+        _uiState.update {
+            it.copy(alertContent = content)
+        }
     }
 
     fun onTargetTimeChanged(timeMillis: Long) {
-        _uiState.value = _uiState.value.copy(
-            targetTime = Instant.fromEpochMilliseconds(timeMillis),
-            errorMessage = null
-        )
+        _uiState.update {
+            it.copy(targetTime = Instant.fromEpochMilliseconds(timeMillis))
+        }
     }
 
     fun addKnockAlert() {
@@ -38,24 +42,27 @@ class AddKnockAlertViewModel(
             val currentState = _uiState.value
 
             if (currentState.alertContent.isBlank()) {
-                _uiState.value = currentState.copy(
-                    errorMessage = "Alert content cannot be empty."
+                _uiEvents.send(
+                    AddKnockAlertUiEvent.ShowSnackbar(
+                        "Alert content cannot be empty."
+                    )
                 )
                 return@launch
             }
 
             val targetTime = currentState.targetTime
             if (targetTime == null || targetTime.toEpochMilliseconds() <= System.currentTimeMillis()) {
-                _uiState.value = currentState.copy(
-                    errorMessage = "Target time must be in the future."
+                _uiEvents.send(
+                    AddKnockAlertUiEvent.ShowSnackbar(
+                        "Target time must be in the future."
+                    )
                 )
                 return@launch
             }
 
-            _uiState.value = currentState.copy(
-                isLoading = true,
-                errorMessage = null
-            )
+            _uiState.update {
+                it.copy(isLoading = true)
+            }
 
             val knockAlert = KnockAlert(
                 id = "",
@@ -68,23 +75,27 @@ class AddKnockAlertViewModel(
 
             when (val result = addKnockAlertUseCase(knockAlert)) {
                 is KnockAlertResult.Success -> {
-                    _uiState.value = currentState.copy(
-                        isLoading = false,
-                        isSuccess = true
-                    )
+                    _uiState.update {
+                        it.copy(isLoading = false)
+                    }
+                    _uiEvents.send(AddKnockAlertUiEvent.AlertAdded)
                 }
 
                 is KnockAlertResult.Failure -> {
-                    _uiState.value = currentState.copy(
-                        isLoading = false,
-                        errorMessage = when (result.error) {
-                            KnockAlertError.NotAuthenticated ->
-                                "You must be signed in to create an alert."
-                            KnockAlertError.Network ->
-                                "Network error. Please try again."
-                            else ->
-                                "Failed to add alert."
-                        }
+                    _uiState.update {
+                        it.copy(isLoading = false)
+                    }
+                    _uiEvents.send(
+                        AddKnockAlertUiEvent.ShowSnackbar(
+                            when (result.error) {
+                                KnockAlertError.NotAuthenticated ->
+                                    "You must be signed in to create an alert."
+                                KnockAlertError.Network ->
+                                    "Network error. Please try again."
+                                else ->
+                                    "Failed to add alert."
+                            }
+                        )
                     )
                 }
             }
@@ -92,6 +103,8 @@ class AddKnockAlertViewModel(
     }
 
     fun resetState() {
-        _uiState.value = AddKnockAlertUiState()
+        _uiState.update {
+            AddKnockAlertUiState()
+        }
     }
 }

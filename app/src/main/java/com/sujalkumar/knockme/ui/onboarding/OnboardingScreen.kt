@@ -22,7 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -33,15 +32,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sujalkumar.knockme.R
-import com.sujalkumar.knockme.domain.model.AuthError
 import com.sujalkumar.knockme.ui.theme.KnockMeTheme
+import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -50,10 +48,24 @@ fun OnboardingRoute(
     viewModel: OnboardingViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.uiEvents.collectLatest { event ->
+            when (event) {
+                is OnboardingUiEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
+                OnboardingUiEvent.SignedIn -> {
+                    // NavigationRoot reacts to auth state change
+                }
+            }
+        }
+    }
 
     OnboardingScreen(
         uiState = uiState,
-        onClearError = viewModel::clearError,
+        snackbarHostState = snackbarHostState,
         onSignInWithGoogle = viewModel::signInWithGoogle,
         modifier = modifier
     )
@@ -63,30 +75,10 @@ fun OnboardingRoute(
 @Composable
 internal fun OnboardingScreen(
     uiState: OnboardingUiState,
-    onClearError: () -> Unit,
+    snackbarHostState: SnackbarHostState,
     onSignInWithGoogle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val snackbarHostState = remember { SnackbarHostState() }
-    val errorMessage = when (uiState.error) {
-        AuthError.Network -> stringResource(R.string.error_network)
-        AuthError.InvalidCredentials -> stringResource(R.string.error_invalid_credentials)
-        AuthError.UserCancelled -> null
-        AuthError.Unauthorized -> stringResource(R.string.error_unauthorized)
-        AuthError.Unknown -> stringResource(R.string.error_unknown)
-        null -> null
-    }
-
-    LaunchedEffect(errorMessage) {
-        errorMessage?.let { message ->
-            snackbarHostState.showSnackbar(
-                message = message,
-                duration = SnackbarDuration.Long
-            )
-            onClearError()
-        }
-    }
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -187,19 +179,7 @@ private fun OnboardingScreenPreview() {
     KnockMeTheme {
         OnboardingScreen(
             uiState = OnboardingUiState(),
-            onClearError = {},
-            onSignInWithGoogle = {}
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun OnboardingScreenErrorPreview() {
-    KnockMeTheme {
-        OnboardingScreen(
-            uiState = OnboardingUiState(error = AuthError.Network),
-            onClearError = {},
+            snackbarHostState = remember { SnackbarHostState() },
             onSignInWithGoogle = {}
         )
     }

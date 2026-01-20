@@ -5,7 +5,5 @@ import kotlin.time.Instant
 data class AddKnockAlertUiState(
     val alertContent: String = "",
     val targetTime: Instant? = null,
-    val isLoading: Boolean = false,
-    val errorMessage: String? = null,
-    val isSuccess: Boolean = false
+    val isLoading: Boolean = false
 )

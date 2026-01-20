@@ -1,6 +1,5 @@
 package com.sujalkumar.knockme.ui.addalert
 
-import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,6 +22,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -38,11 +39,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sujalkumar.knockme.ui.theme.KnockMeTheme
+import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -67,13 +68,28 @@ fun AddKnockAlertRoute(
     onNavigateUp: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.uiEvents.collectLatest { event ->
+            when (event) {
+                is AddKnockAlertUiEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
+                AddKnockAlertUiEvent.AlertAdded -> {
+                    viewModel.resetState()
+                    onNavigateUp()
+                }
+            }
+        }
+    }
 
     AddKnockAlertScreen(
         uiState = uiState,
+        snackbarHostState = snackbarHostState,
         onAlertContentChanged = viewModel::onAlertContentChanged,
         onTargetTimeChanged = viewModel::onTargetTimeChanged,
         onSubmit = viewModel::addKnockAlert,
-        onResetState = viewModel::resetState,
         onNavigateUp = onNavigateUp
     )
 }
@@ -82,18 +98,16 @@ fun AddKnockAlertRoute(
 @Composable
 internal fun AddKnockAlertScreen(
     uiState: AddKnockAlertUiState,
+    snackbarHostState: SnackbarHostState,
     onAlertContentChanged: (String) -> Unit,
     onTargetTimeChanged: (Long) -> Unit,
     onSubmit: () -> Unit,
-    onResetState: () -> Unit,
     onNavigateUp: () -> Unit
 ) {
     var showDatePickerDialog by remember { mutableStateOf(false) }
     var showTimePickerDialog by remember { mutableStateOf(false) }
 
     var selectedDateTimeMillis by remember { mutableStateOf(uiState.targetTime?.toEpochMilliseconds()) }
-
-    val context = LocalContext.current
 
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = selectedDateTimeMillis ?: System.currentTimeMillis()
@@ -117,22 +131,8 @@ internal fun AddKnockAlertScreen(
         derivedStateOf { formatEpochMillisToDateTime(selectedDateTimeMillis) }
     }
 
-    LaunchedEffect(uiState.isSuccess, uiState.errorMessage) {
-        when {
-            uiState.isSuccess -> {
-                Toast.makeText(context, "Alert added successfully!", Toast.LENGTH_SHORT).show()
-                onResetState()
-                onNavigateUp()
-            }
-
-            uiState.errorMessage != null -> {
-                Toast.makeText(context, uiState.errorMessage, Toast.LENGTH_LONG).show()
-                onResetState()
-            }
-        }
-    }
-
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Add New KnockAlert") },
@@ -247,15 +247,6 @@ internal fun AddKnockAlertScreen(
                 onClick = {
                     if (uiState.alertContent.isNotBlank() && selectedDateTimeMillis != null) {
                         onSubmit()
-                    } else if (selectedDateTimeMillis == null) {
-                        Toast.makeText(
-                            context,
-                            "Please select a target date and time",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } else if (uiState.alertContent.isBlank()) {
-                        Toast.makeText(context, "Alert content cannot be empty", Toast.LENGTH_SHORT)
-                            .show()
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -281,10 +272,10 @@ private fun AddKnockAlertPreview() {
     KnockMeTheme {
         AddKnockAlertScreen(
             uiState = AddKnockAlertUiState(),
+            snackbarHostState = remember { SnackbarHostState() },
             onAlertContentChanged = {},
             onTargetTimeChanged = {},
             onSubmit = {},
-            onResetState = {},
             onNavigateUp = {}
         )
     }
@@ -300,10 +291,10 @@ private fun AddKnockAlertLoadingPreview() {
                 targetTime = Instant.fromEpochMilliseconds(System.currentTimeMillis()),
                 isLoading = true
             ),
+            snackbarHostState = remember { SnackbarHostState() },
             onAlertContentChanged = {},
             onTargetTimeChanged = {},
             onSubmit = {},
-            onResetState = {},
             onNavigateUp = {}
         )
     }
@@ -318,10 +309,10 @@ private fun AddKnockAlertFilledPreview() {
                 alertContent = "Meeting with Team",
                 targetTime = Instant.fromEpochMilliseconds(System.currentTimeMillis())
             ),
+            snackbarHostState = remember { SnackbarHostState() },
             onAlertContentChanged = {},
             onTargetTimeChanged = {},
             onSubmit = {},
-            onResetState = {},
             onNavigateUp = {}
         )
     }

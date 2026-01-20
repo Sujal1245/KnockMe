@@ -2,12 +2,14 @@ package com.sujalkumar.knockme.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sujalkumar.knockme.domain.model.KnockAlertResult
 import com.sujalkumar.knockme.domain.repository.AuthRepository
 import com.sujalkumar.knockme.domain.repository.OtherUsersRepository
 import com.sujalkumar.knockme.domain.usecase.KnockOnAlertUseCase
 import com.sujalkumar.knockme.domain.usecase.ObserveFeedAlertsUseCase
 import com.sujalkumar.knockme.domain.usecase.ObserveMyAlertsUseCase
 import com.sujalkumar.knockme.domain.usecase.SignOutUseCase
+import com.sujalkumar.knockme.ui.mapper.toUiMessage
 import com.sujalkumar.knockme.ui.model.AlertOwner
 import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
 import com.sujalkumar.knockme.ui.model.MyKnockAlertUi
@@ -161,7 +163,18 @@ class HomeViewModel(
 
     fun knockOnAlert(alertId: String) {
         viewModelScope.launch {
-            knockOnAlertUseCase(alertId)
+            when (val result = knockOnAlertUseCase(alertId)) {
+                is KnockAlertResult.Success -> {
+                    // No-op: UI will update reactively via flows
+                }
+                is KnockAlertResult.Failure -> {
+                    _uiEvents.send(
+                        HomeUiEvent.ShowSnackbar(
+                            message = result.error.toUiMessage()
+                        )
+                    )
+                }
+            }
         }
     }
 
