@@ -8,4 +8,16 @@
     <string name="error_invalid_credentials">Invalid credentials. Please try again.</string>
     <string name="error_unauthorized">You are not authorized to sign in.</string>
     <string name="error_unknown">Something went wrong. Please try again.</string>
+    <string name="internet_connection_error">Please check your internet connection.</string>
+    <string name="invalid_credentials_error">Invalid credentials. Please try again.</string>
+    <string name="sign_in_cancelled_error">Sign-in cancelled.</string>
+    <string name="unauthorized_error">You are not authorized to sign in.</string>
+    <string name="unknown_error">Something went wrong. Please try again.</string>
+    <string name="not_authenticated_error">You must be signed in!</string>
+    <string name="permission_denied_error">Permission Denied!</string>
+    <string name="already_knocked_error">You’ve already knocked on this alert.</string>
+    <string name="alert_not_found_error">This alert no longer exists.</string>
+    <string name="error_empty_alert_content">Alert cannot be empty.</string>
+    <string name="error_invalid_target_time">Target time must be in the future.</string>
+    <string name="sign_out_fallback_error">Failed to sign out</string>
 </resources>

@@ -1,8 +1,5 @@
 package com.sujalkumar.knockme.ui.home
 
-import androidx.compose.runtime.LaunchedEffect
-import kotlinx.coroutines.flow.collectLatest
-
 import android.text.format.DateFormat
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
@@ -55,6 +52,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -63,6 +61,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -73,10 +72,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.sujalkumar.knockme.domain.model.KnockAlert
 import com.sujalkumar.knockme.domain.model.User
+import com.sujalkumar.knockme.ui.common.asString
 import com.sujalkumar.knockme.ui.model.AlertOwner
 import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
 import com.sujalkumar.knockme.ui.model.MyKnockAlertUi
 import com.sujalkumar.knockme.util.TimeUtils
+import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.absoluteValue
 import kotlin.time.Clock
@@ -91,11 +92,13 @@ fun HomeRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val context = LocalContext.current
+
     LaunchedEffect(Unit) {
         viewModel.uiEvents.collectLatest { event ->
             when (event) {
                 is HomeUiEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(event.message)
+                    snackbarHostState.showSnackbar(event.message.asString(context))
                 }
             }
         }

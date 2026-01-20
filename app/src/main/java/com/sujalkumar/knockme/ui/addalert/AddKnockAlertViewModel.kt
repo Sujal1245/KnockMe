@@ -2,10 +2,12 @@ package com.sujalkumar.knockme.ui.addalert
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sujalkumar.knockme.R
 import com.sujalkumar.knockme.domain.model.KnockAlert
-import com.sujalkumar.knockme.domain.model.KnockAlertError
 import com.sujalkumar.knockme.domain.model.KnockAlertResult
 import com.sujalkumar.knockme.domain.usecase.AddKnockAlertUseCase
+import com.sujalkumar.knockme.ui.common.UiText
+import com.sujalkumar.knockme.ui.mapper.toUiText
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,7 +46,7 @@ class AddKnockAlertViewModel(
             if (currentState.alertContent.isBlank()) {
                 _uiEvents.send(
                     AddKnockAlertUiEvent.ShowSnackbar(
-                        "Alert content cannot be empty."
+                        UiText.StringResource(R.string.error_empty_alert_content)
                     )
                 )
                 return@launch
@@ -54,7 +56,7 @@ class AddKnockAlertViewModel(
             if (targetTime == null || targetTime.toEpochMilliseconds() <= System.currentTimeMillis()) {
                 _uiEvents.send(
                     AddKnockAlertUiEvent.ShowSnackbar(
-                        "Target time must be in the future."
+                        UiText.StringResource(R.string.error_invalid_target_time)
                     )
                 )
                 return@launch
@@ -87,14 +89,7 @@ class AddKnockAlertViewModel(
                     }
                     _uiEvents.send(
                         AddKnockAlertUiEvent.ShowSnackbar(
-                            when (result.error) {
-                                KnockAlertError.NotAuthenticated ->
-                                    "You must be signed in to create an alert."
-                                KnockAlertError.Network ->
-                                    "Network error. Please try again."
-                                else ->
-                                    "Failed to add alert."
-                            }
+                            result.error.toUiText()
                         )
                     )
                 }

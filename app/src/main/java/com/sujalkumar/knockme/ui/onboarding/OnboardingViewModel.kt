@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sujalkumar.knockme.domain.model.AuthResult
 import com.sujalkumar.knockme.domain.usecase.SignInWithGoogleUseCase
-import com.sujalkumar.knockme.ui.mapper.toUiMessage
+import com.sujalkumar.knockme.ui.mapper.toUiText
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,7 +36,7 @@ class OnboardingViewModel(
                     _uiState.update { it.copy(isSigningIn = false) }
                     _uiEvents.send(
                         OnboardingUiEvent.ShowSnackbar(
-                            message = result.error.toUiMessage()
+                            message = result.error.toUiText()
                         )
                     )
                 }

@@ -2,6 +2,7 @@ package com.sujalkumar.knockme.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sujalkumar.knockme.R
 import com.sujalkumar.knockme.domain.model.KnockAlertResult
 import com.sujalkumar.knockme.domain.repository.AuthRepository
 import com.sujalkumar.knockme.domain.repository.OtherUsersRepository
@@ -9,7 +10,8 @@ import com.sujalkumar.knockme.domain.usecase.KnockOnAlertUseCase
 import com.sujalkumar.knockme.domain.usecase.ObserveFeedAlertsUseCase
 import com.sujalkumar.knockme.domain.usecase.ObserveMyAlertsUseCase
 import com.sujalkumar.knockme.domain.usecase.SignOutUseCase
-import com.sujalkumar.knockme.ui.mapper.toUiMessage
+import com.sujalkumar.knockme.ui.common.UiText
+import com.sujalkumar.knockme.ui.mapper.toUiText
 import com.sujalkumar.knockme.ui.model.AlertOwner
 import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
 import com.sujalkumar.knockme.ui.model.MyKnockAlertUi
@@ -167,10 +169,11 @@ class HomeViewModel(
                 is KnockAlertResult.Success -> {
                     // No-op: UI will update reactively via flows
                 }
+
                 is KnockAlertResult.Failure -> {
                     _uiEvents.send(
                         HomeUiEvent.ShowSnackbar(
-                            message = result.error.toUiMessage()
+                            message = result.error.toUiText()
                         )
                     )
                 }
@@ -188,7 +191,10 @@ class HomeViewModel(
                 loadingState.value = false
                 _uiEvents.send(
                     HomeUiEvent.ShowSnackbar(
-                        message = error.message ?: "Failed to sign out"
+                        message =
+                            error.message?.let {
+                                UiText.DynamicString(it)
+                            } ?: UiText.StringResource(R.string.sign_out_fallback_error)
                     )
                 )
             }

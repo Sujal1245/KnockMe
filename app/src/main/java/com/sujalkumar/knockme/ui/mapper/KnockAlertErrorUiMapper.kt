@@ -1,24 +1,26 @@
 package com.sujalkumar.knockme.ui.mapper
 
+import com.sujalkumar.knockme.R
 import com.sujalkumar.knockme.domain.model.KnockAlertError
+import com.sujalkumar.knockme.ui.common.UiText
 
-fun KnockAlertError.toUiMessage(): String =
+fun KnockAlertError.toUiText(): UiText =
     when (this) {
         KnockAlertError.NotAuthenticated ->
-            "You must be signed in to knock."
+            UiText.StringResource(resId = R.string.not_authenticated_error)
 
         KnockAlertError.PermissionDenied ->
-            "You don’t have permission to knock on this alert."
+            UiText.StringResource(resId = R.string.permission_denied_error)
 
         KnockAlertError.AlreadyKnocked ->
-            "You’ve already knocked on this alert."
+            UiText.StringResource(resId = R.string.already_knocked_error)
 
         KnockAlertError.NotFound ->
-            "This alert no longer exists."
+            UiText.StringResource(resId = R.string.alert_not_found_error)
 
         KnockAlertError.Network ->
-            "Network error. Please try again."
+            UiText.StringResource(resId = R.string.internet_connection_error)
 
         KnockAlertError.Unknown ->
-            "Something went wrong. Please try again."
+            UiText.StringResource(resId = R.string.unknown_error)
     }

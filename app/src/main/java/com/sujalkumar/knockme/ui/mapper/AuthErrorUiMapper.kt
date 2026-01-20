@@ -1,21 +1,23 @@
 package com.sujalkumar.knockme.ui.mapper
 
+import com.sujalkumar.knockme.R
 import com.sujalkumar.knockme.domain.model.AuthError
+import com.sujalkumar.knockme.ui.common.UiText
 
-fun AuthError.toUiMessage(): String =
+fun AuthError.toUiText(): UiText =
     when (this) {
         AuthError.Network ->
-            "Please check your internet connection."
+            UiText.StringResource(resId = R.string.internet_connection_error)
 
         AuthError.InvalidCredentials ->
-            "Invalid credentials. Please try again."
+            UiText.StringResource(resId = R.string.invalid_credentials_error)
 
         AuthError.UserCancelled ->
-            "Sign-in cancelled."
+            UiText.StringResource(resId = R.string.sign_in_cancelled_error)
 
         AuthError.Unauthorized ->
-            "You are not authorized to sign in."
+            UiText.StringResource(resId = R.string.unauthorized_error)
 
         AuthError.Unknown ->
-            "Something went wrong. Please try again."
+            UiText.StringResource(resId = R.string.unknown_error)
     }
