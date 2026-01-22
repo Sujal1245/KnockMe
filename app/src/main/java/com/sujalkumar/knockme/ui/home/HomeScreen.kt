@@ -61,6 +61,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -70,12 +71,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.sujalkumar.knockme.domain.model.KnockAlert
 import com.sujalkumar.knockme.domain.model.User
 import com.sujalkumar.knockme.ui.common.asString
 import com.sujalkumar.knockme.ui.model.AlertOwner
 import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
 import com.sujalkumar.knockme.ui.model.MyKnockAlertUi
+import com.sujalkumar.knockme.ui.theme.KnockMeTheme
 import com.sujalkumar.knockme.util.TimeUtils
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
@@ -556,6 +560,8 @@ internal fun KnockAlertItem(
     shape: Shape = MaterialTheme.shapes.medium
 ) {
     val alert = displayableAlert.alert
+    val placeholderColor = MaterialTheme.colorScheme.surfaceVariant
+
     OutlinedCard(
         modifier = modifier.fillMaxWidth(),
         shape = shape,
@@ -570,8 +576,13 @@ internal fun KnockAlertItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = displayableAlert.owner?.photoUrl,
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(displayableAlert.owner?.photoUrl)
+                    .crossfade(true)
+                    .build(),
                 contentDescription = "Alert owner avatar",
+                placeholder = ColorPainter(placeholderColor),
+                error = ColorPainter(placeholderColor),
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape),
@@ -629,141 +640,150 @@ internal fun KnockAlertItem(
 @Preview(showBackground = true, name = "Home Screen - No User")
 @Composable
 fun HomeScreenPreviewNoUser() {
-    HomeScreen(
-        uiState = HomeUiState(
-            user = null,
-            myKnockAlerts = emptyList(),
-            feedKnockAlerts = emptyList()
-        ),
-        snackbarHostState = SnackbarHostState(),
-        onKnockAction = {},
-        onNavigateToAddAlert = {},
-        onSignOut = {}
-    )
+    KnockMeTheme {
+        HomeScreen(
+            uiState = HomeUiState(
+                user = null,
+                myKnockAlerts = emptyList(),
+                feedKnockAlerts = emptyList(),
+                isLoading = false
+            ),
+            snackbarHostState = SnackbarHostState(),
+            onKnockAction = {},
+            onNavigateToAddAlert = {},
+            onSignOut = {}
+        )
+    }
 }
 
 @Preview(showBackground = true, name = "Home Screen - User With Alerts")
 @Composable
 fun HomeScreenPreviewWithUserAndAlerts() {
-    val sampleUser = User(
-        uid = "currentUser123",
-        displayName = "Current User"
-    )
-    val now = Clock.System.now().toEpochMilliseconds()
-    val myAlerts = listOf(
-        MyKnockAlertUi(
-            alert = KnockAlert(
-                id = "myAlert1",
-                ownerId = "currentUser123",
-                content = "This is my first alert, just a reminder for myself.",
-                createdAt = Instant.fromEpochMilliseconds(now - 400000),
-                targetTime = Instant.fromEpochMilliseconds(now - 200000),
-                knockedByUserIds = emptyList()
-            ),
-            progress = 1f,
-            isActive = true
-        ),
-        MyKnockAlertUi(
-            alert = KnockAlert(
-                id = "myAlert2",
-                ownerId = "currentUser123",
-                content = "Another personal alert for the horizontal pager.",
-                createdAt = Instant.fromEpochMilliseconds(now - 300000),
-                targetTime = Instant.fromEpochMilliseconds(now + 60000),
-                knockedByUserIds = emptyList()
-            ),
-            progress = 0.7f,
-            isActive = false
-        ),
-        MyKnockAlertUi(
-            alert = KnockAlert(
-                id = "myAlert3",
-                ownerId = "currentUser123",
-                content = "A third alert to test the pager dots properly.",
-                createdAt = Instant.fromEpochMilliseconds(now - 200000),
-                targetTime = Instant.fromEpochMilliseconds(now + 120000),
-                knockedByUserIds = emptyList()
-            ),
-            progress = 0.3f,
-            isActive = false
+    KnockMeTheme {
+        val sampleUser = User(
+            uid = "currentUser123",
+            displayName = "Current User"
         )
-    )
-    val feedAlerts = listOf(
-        DisplayableKnockAlert(
-            alert = KnockAlert(
-                id = "feedAlert1",
-                ownerId = "otherUser456",
-                content = "Alert from another user, visible in the main feed.",
-                createdAt = Instant.fromEpochMilliseconds(now - 150000),
-                targetTime = Instant.fromEpochMilliseconds(now - 100000),
-                knockedByUserIds = listOf("someUserId")
+        val now = Clock.System.now().toEpochMilliseconds()
+        val myAlerts = listOf(
+            MyKnockAlertUi(
+                alert = KnockAlert(
+                    id = "myAlert1",
+                    ownerId = "currentUser123",
+                    content = "This is my first alert, just a reminder to me.",
+                    createdAt = Instant.fromEpochMilliseconds(now - 400000),
+                    targetTime = Instant.fromEpochMilliseconds(now - 200000),
+                    knockedByUserIds = emptyList()
+                ),
+                progress = 1f,
+                isActive = true
             ),
-            owner = AlertOwner(
-                displayName = "Other User",
-                photoUrl = null
-            )
-        ),
-        DisplayableKnockAlert(
-            alert = KnockAlert(
-                id = "feedAlert2",
-                ownerId = "anotherUser789",
-                content = "Second alert in the feed from someone else.",
-                createdAt = Instant.fromEpochMilliseconds(now - 80000),
-                targetTime = Instant.fromEpochMilliseconds(now - 50000),
-                knockedByUserIds = emptyList()
+            MyKnockAlertUi(
+                alert = KnockAlert(
+                    id = "myAlert2",
+                    ownerId = "currentUser123",
+                    content = "Another personal alert for the horizontal pager.",
+                    createdAt = Instant.fromEpochMilliseconds(now - 300000),
+                    targetTime = Instant.fromEpochMilliseconds(now + 60000),
+                    knockedByUserIds = emptyList()
+                ),
+                progress = 0.7f,
+                isActive = false
             ),
-            owner = AlertOwner(
-                displayName = "Another User",
-                photoUrl = null
+            MyKnockAlertUi(
+                alert = KnockAlert(
+                    id = "myAlert3",
+                    ownerId = "currentUser123",
+                    content = "A third alert to test the pager dots properly.",
+                    createdAt = Instant.fromEpochMilliseconds(now - 200000),
+                    targetTime = Instant.fromEpochMilliseconds(now + 120000),
+                    knockedByUserIds = emptyList()
+                ),
+                progress = 0.3f,
+                isActive = false
             )
         )
-    )
-    HomeScreen(
-        uiState = HomeUiState(
-            user = sampleUser,
-            myKnockAlerts = myAlerts,
-            feedKnockAlerts = feedAlerts
-        ),
-        snackbarHostState = SnackbarHostState(),
-        onKnockAction = { println("Preview Knock: ${it.id}") },
-        onNavigateToAddAlert = {},
-        onSignOut = {}
-    )
+        val feedAlerts = listOf(
+            DisplayableKnockAlert(
+                alert = KnockAlert(
+                    id = "feedAlert1",
+                    ownerId = "otherUser456",
+                    content = "Alert from another user, visible in the main feed.",
+                    createdAt = Instant.fromEpochMilliseconds(now - 150000),
+                    targetTime = Instant.fromEpochMilliseconds(now - 100000),
+                    knockedByUserIds = listOf("someUserId")
+                ),
+                owner = AlertOwner(
+                    displayName = "Other User",
+                    photoUrl = null
+                )
+            ),
+            DisplayableKnockAlert(
+                alert = KnockAlert(
+                    id = "feedAlert2",
+                    ownerId = "anotherUser789",
+                    content = "Second alert in the feed from someone else.",
+                    createdAt = Instant.fromEpochMilliseconds(now - 80000),
+                    targetTime = Instant.fromEpochMilliseconds(now - 50000),
+                    knockedByUserIds = emptyList()
+                ),
+                owner = AlertOwner(
+                    displayName = "Another User",
+                    photoUrl = null
+                )
+            )
+        )
+        HomeScreen(
+            uiState = HomeUiState(
+                user = sampleUser,
+                myKnockAlerts = myAlerts,
+                feedKnockAlerts = feedAlerts,
+                isLoading = false
+            ),
+            snackbarHostState = SnackbarHostState(),
+            onKnockAction = { println("Preview Knock: ${it.id}") },
+            onNavigateToAddAlert = {},
+            onSignOut = {}
+        )
+    }
 }
 
 @Preview(showBackground = true, name = "Home Screen - User, No Own Alerts")
 @Composable
 fun HomeScreenPreviewUserNoOwnAlerts() {
-    val sampleUser = User(
-        uid = "currentUser123",
-        displayName = "Current User"
-    )
-    val now = Clock.System.now().toEpochMilliseconds()
-    val feedAlerts = listOf(
-        DisplayableKnockAlert(
-            alert = KnockAlert(
-                id = "feedAlert1",
-                ownerId = "otherUser456",
-                content = "Feed alert when user has no own alerts.",
-                createdAt = Instant.fromEpochMilliseconds(now - 200000),
-                targetTime = Instant.fromEpochMilliseconds(now - 100000),
-                knockedByUserIds = emptyList()
-            ),
-            owner = AlertOwner(
-                displayName = "Other User",
-                photoUrl = null
+    KnockMeTheme {
+        val sampleUser = User(
+            uid = "currentUser123",
+            displayName = "Current User"
+        )
+        val now = Clock.System.now().toEpochMilliseconds()
+        val feedAlerts = listOf(
+            DisplayableKnockAlert(
+                alert = KnockAlert(
+                    id = "feedAlert1",
+                    ownerId = "otherUser456",
+                    content = "Feed alert when user has no own alerts.",
+                    createdAt = Instant.fromEpochMilliseconds(now - 200000),
+                    targetTime = Instant.fromEpochMilliseconds(now - 100000),
+                    knockedByUserIds = emptyList()
+                ),
+                owner = AlertOwner(
+                    displayName = "Other User",
+                    photoUrl = null
+                )
             )
         )
-    )
-    HomeScreen(
-        uiState = HomeUiState(
-            user = sampleUser,
-            myKnockAlerts = emptyList(),
-            feedKnockAlerts = feedAlerts
-        ),
-        snackbarHostState = SnackbarHostState(),
-        onKnockAction = { println("Preview Knock: ${it.id}") },
-        onNavigateToAddAlert = {},
-        onSignOut = {}
-    )
+        HomeScreen(
+            uiState = HomeUiState(
+                user = sampleUser,
+                myKnockAlerts = emptyList(),
+                feedKnockAlerts = feedAlerts,
+                isLoading = false
+            ),
+            snackbarHostState = SnackbarHostState(),
+            onKnockAction = { println("Preview Knock: ${it.id}") },
+            onNavigateToAddAlert = {},
+            onSignOut = {}
+        )
+    }
 }
