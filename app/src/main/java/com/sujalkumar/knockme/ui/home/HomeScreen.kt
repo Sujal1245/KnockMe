@@ -43,6 +43,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -54,7 +55,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -88,6 +91,7 @@ import kotlin.math.absoluteValue
 import kotlin.time.Clock
 import kotlin.time.Instant
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeRoute(
     modifier: Modifier = Modifier,
@@ -95,7 +99,13 @@ fun HomeRoute(
     onNavigateToAddAlert: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     val snackbarHostState = remember { SnackbarHostState() }
+
+    var selectedAlertForKnockers by remember {
+        mutableStateOf<MyKnockAlertUi?>(null)
+    }
+    var showBottomSheet by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
 
@@ -112,11 +122,25 @@ fun HomeRoute(
     HomeScreen(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
+        onShowKnockers = { alert ->
+            selectedAlertForKnockers = alert
+            showBottomSheet = true
+        },
         onKnockAction = { alert -> viewModel.knockOnAlert(alert.id) },
         onSignOut = viewModel::onSignOut,
         onNavigateToAddAlert = onNavigateToAddAlert,
-        modifier = modifier
+        modifier = modifier,
     )
+
+    if (showBottomSheet) {
+        ModalBottomSheet(onDismissRequest = {
+            showBottomSheet = false
+        }) {
+            KnockersBottomSheetContent(
+                alert = selectedAlertForKnockers!!
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
@@ -124,10 +148,11 @@ fun HomeRoute(
 internal fun HomeScreen(
     uiState: HomeUiState,
     snackbarHostState: SnackbarHostState,
+    onShowKnockers: (MyKnockAlertUi) -> Unit,
     onKnockAction: (KnockAlert) -> Unit,
     onSignOut: () -> Unit,
     onNavigateToAddAlert: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val showFab = uiState.myKnockAlerts.isNotEmpty()
 
@@ -183,6 +208,7 @@ internal fun HomeScreen(
                     user = uiState.user,
                     myKnockAlerts = uiState.myKnockAlerts,
                     feedKnockAlerts = uiState.feedKnockAlerts,
+                    onShowKnockers = onShowKnockers,
                     onKnockAction = onKnockAction,
                     onNavigateToAddAlert = onNavigateToAddAlert,
                     modifier = Modifier
@@ -200,6 +226,7 @@ internal fun HomeScreenSuccessContent(
     user: User?,
     myKnockAlerts: List<MyKnockAlertUi>,
     feedKnockAlerts: List<DisplayableKnockAlert>,
+    onShowKnockers: (MyKnockAlertUi) -> Unit,
     onKnockAction: (KnockAlert) -> Unit,
     onNavigateToAddAlert: () -> Unit,
     modifier: Modifier = Modifier
@@ -228,7 +255,7 @@ internal fun HomeScreenSuccessContent(
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = "Welcome back",
+                        text = stringResource(R.string.welcome_back),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -265,11 +292,11 @@ internal fun HomeScreenSuccessContent(
                     Icon(
                         imageVector = Icons.Default.Add,
                         modifier = Modifier.size(48.dp),
-                        contentDescription = "Create your first KnockAlert",
+                        contentDescription = stringResource(R.string.add_icon),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "Create your first KnockAlert",
+                        text = stringResource(R.string.create_your_first_knockalert),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Medium
                     )
@@ -301,6 +328,9 @@ internal fun HomeScreenSuccessContent(
 
                     MyKnockAlertCard(
                         myAlert = myKnockAlerts[page],
+                        onShowKnockers = { alert ->
+                            onShowKnockers(alert)
+                        },
                         modifier = Modifier.graphicsLayer {
                             scaleX = scale
                             scaleY = scale
@@ -319,7 +349,7 @@ internal fun HomeScreenSuccessContent(
 
                             val width by animateDpAsState(
                                 targetValue = if (selected) 20.dp else 6.dp,
-                                label = "PagerIndicatorWidth"
+                                label = stringResource(R.string.pagerindicatorwidth)
                             )
 
                             val color by animateColorAsState(
@@ -327,8 +357,10 @@ internal fun HomeScreenSuccessContent(
                                     if (selected)
                                         MaterialTheme.colorScheme.primary
                                     else
-                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                                label = "PagerIndicatorColor"
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                            alpha = 0.4f
+                                        ),
+                                label = stringResource(R.string.pagerindicatorcolor)
                             )
 
                             Box(
@@ -362,14 +394,14 @@ internal fun HomeScreenSuccessContent(
                 Spacer(Modifier.height(4.dp))
 
                 Text(
-                    text = "KnockAlerts from Others",
+                    text = stringResource(R.string.knockalerts_from_others),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
                 if (feedKnockAlerts.isEmpty()) {
                     Text(
-                        text = "No active KnockAlerts from others right now.",
+                        text = stringResource(R.string.no_active_knockalerts_from_others_right_now),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier
                             .padding(top = 8.dp)
@@ -422,6 +454,7 @@ internal fun HomeScreenSuccessContent(
 @Composable
 internal fun MyKnockAlertCard(
     myAlert: MyKnockAlertUi,
+    onShowKnockers: (MyKnockAlertUi) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val containerColor by animateColorAsState(
@@ -463,19 +496,25 @@ internal fun MyKnockAlertCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Android,
-                            contentDescription = "Android"
+                            contentDescription = stringResource(R.string.android)
                         )
                         Text(
-                            text = "No one has knocked yet",
+                            text = stringResource(R.string.no_one_has_knocked_yet),
                             style = MaterialTheme.typography.bodyMedium,
                             fontFamily = FontFamily.Monospace
                         )
                     }
                 } else {
                     Button(
-                        onClick = { }
+                        onClick = { onShowKnockers(myAlert) },
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Knocked by ${myAlert.alert.knockedByUserIds.size} users")
+                        Text(
+                            stringResource(
+                                R.string.knocked_by_users,
+                                myAlert.alert.knockedByUserIds.size
+                            )
+                        )
                     }
                 }
 
@@ -647,6 +686,30 @@ internal fun KnockAlertItem(
     }
 }
 
+@Composable
+fun KnockersBottomSheetContent(alert: MyKnockAlertUi) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.knocked_by),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        alert.alert.knockedByUserIds.forEach { userId ->
+            Text(
+                text = userId, // temporary
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
 @Preview(showBackground = true, name = "Home Screen - No User")
 @Composable
 fun HomeScreenPreviewNoUser() {
@@ -659,6 +722,7 @@ fun HomeScreenPreviewNoUser() {
                 isLoading = false
             ),
             snackbarHostState = SnackbarHostState(),
+            onShowKnockers = {},
             onKnockAction = {},
             onNavigateToAddAlert = {},
             onSignOut = {}
@@ -752,6 +816,7 @@ fun HomeScreenPreviewWithUserAndAlerts() {
             ),
             snackbarHostState = SnackbarHostState(),
             onKnockAction = { println("Preview Knock: ${it.id}") },
+            onShowKnockers = {},
             onNavigateToAddAlert = {},
             onSignOut = {}
         )
@@ -792,6 +857,7 @@ fun HomeScreenPreviewUserNoOwnAlerts() {
             ),
             snackbarHostState = SnackbarHostState(),
             onKnockAction = { println("Preview Knock: ${it.id}") },
+            onShowKnockers = {},
             onNavigateToAddAlert = {},
             onSignOut = {}
         )

@@ -30,4 +30,15 @@
     <string name="logout">Logout</string>
     <string name="create_knockalert">Create KnockAlert</string>
     <string name="active_for">Active for %1$s</string>
+    <string name="no_one_has_knocked_yet">No one has knocked yet</string>
+    <string name="knocked_by_users">Knocked by %1$d users</string>
+    <string name="android">Android</string>
+    <string name="no_active_knockalerts_from_others_right_now">No active KnockAlerts from others right now.</string>
+    <string name="pagerindicatorwidth">PagerIndicatorWidth</string>
+    <string name="pagerindicatorcolor">PagerIndicatorColor</string>
+    <string name="knockalerts_from_others">KnockAlerts from Others</string>
+    <string name="add_icon">Add Icon</string>
+    <string name="create_your_first_knockalert">Create your first KnockAlert</string>
+    <string name="welcome_back">Welcome back</string>
+    <string name="knocked_by">Knocked by</string>
 </resources>
