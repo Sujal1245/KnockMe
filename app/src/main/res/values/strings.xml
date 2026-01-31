@@ -20,4 +20,14 @@
     <string name="error_empty_alert_content">Alert cannot be empty.</string>
     <string name="error_invalid_target_time">Target time must be in the future.</string>
     <string name="sign_out_fallback_error">Failed to sign out</string>
+    <string name="active_since">Active since: %1$s</string>
+    <string name="unknown">Unknown</string>
+    <string name="from">From: %1$s</string>
+    <string name="alert_owner_avatar">Alert owner avatar</string>
+    <string name="ready">%1$d% ready</string>
+    <string name="alertprogress">AlertProgress</string>
+    <string name="knockme">KnockMe</string>
+    <string name="logout">Logout</string>
+    <string name="create_knockalert">Create KnockAlert</string>
+    <string name="active_for">Active for %1$s</string>
 </resources>

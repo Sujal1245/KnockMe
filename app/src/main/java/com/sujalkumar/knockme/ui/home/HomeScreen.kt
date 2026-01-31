@@ -5,7 +5,6 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,6 +62,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -73,6 +73,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.sujalkumar.knockme.R
 import com.sujalkumar.knockme.domain.model.KnockAlert
 import com.sujalkumar.knockme.domain.model.User
 import com.sujalkumar.knockme.ui.common.asString
@@ -118,10 +119,7 @@ fun HomeRoute(
     )
 }
 
-@OptIn(
-    ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
-    ExperimentalMaterial3ExpressiveApi::class
-)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 internal fun HomeScreen(
     uiState: HomeUiState,
@@ -140,7 +138,7 @@ internal fun HomeScreen(
                 CenterAlignedTopAppBar(
                     title = {
                         Text(
-                            text = "KnockMe",
+                            text = stringResource(R.string.knockme),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -149,7 +147,7 @@ internal fun HomeScreen(
                         IconButton(onClick = onSignOut) {
                             Icon(
                                 imageVector = Icons.Outlined.TimeToLeave,
-                                contentDescription = "Logout"
+                                contentDescription = stringResource(R.string.logout)
                             )
                         }
                     }
@@ -159,7 +157,10 @@ internal fun HomeScreen(
         floatingActionButton = {
             if (showFab) {
                 FloatingActionButton(onClick = onNavigateToAddAlert) {
-                    Icon(Icons.Filled.Add, contentDescription = "Create KnockAlert")
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = stringResource(R.string.create_knockalert)
+                    )
                 }
             }
         },
@@ -444,8 +445,6 @@ internal fun MyKnockAlertCard(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
 
-            /* ---------- CONTENT ---------- */
-
             Text(
                 text = myAlert.alert.content,
                 style = MaterialTheme.typography.headlineSmall,
@@ -453,8 +452,6 @@ internal fun MyKnockAlertCard(
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
-
-            /* ---------- FOOTER ---------- */
 
             if (myAlert.isActive) {
 
@@ -482,25 +479,22 @@ internal fun MyKnockAlertCard(
                     }
                 }
 
-                // ACTIVE → relative time
                 Text(
-                    text = "Active for ${
-                        TimeUtils.toRelativeTime(
+                    text = stringResource(
+                        R.string.active_for, TimeUtils.toRelativeTime(
                             myAlert.alert.targetTime.toEpochMilliseconds()
                         )
-                    }",
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             } else {
-                // UPCOMING → fancy progress
                 val animatedProgress by animateFloatAsState(
                     targetValue = myAlert.progress,
-                    label = "AlertProgress"
+                    label = stringResource(R.string.alertprogress)
                 )
 
                 Column {
-                    // Target time (subtle)
                     val formattedTime = remember(myAlert.alert.targetTime) {
                         DateFormat.format(
                             "EEE, dd MMM • hh:mm a",
@@ -516,7 +510,6 @@ internal fun MyKnockAlertCard(
 
                     Spacer(Modifier.height(14.dp))
 
-                    // Prominent progress bar
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -540,7 +533,7 @@ internal fun MyKnockAlertCard(
                     Spacer(Modifier.height(6.dp))
 
                     Text(
-                        text = "${(animatedProgress * 100).toInt()}% ready",
+                        text = stringResource(R.string.ready, (animatedProgress * 100).toInt()),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -560,7 +553,6 @@ internal fun KnockAlertItem(
     shape: Shape = MaterialTheme.shapes.medium
 ) {
     val alert = displayableAlert.alert
-    val placeholderColor = MaterialTheme.colorScheme.surfaceVariant
 
     OutlinedCard(
         modifier = modifier.fillMaxWidth(),
@@ -575,20 +567,26 @@ internal fun KnockAlertItem(
                 .padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+
+            val placeholderColor = MaterialTheme.colorScheme.surfaceVariant
+            val errorColor = MaterialTheme.colorScheme.inverseOnSurface
+
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(displayableAlert.owner?.photoUrl)
                     .crossfade(true)
                     .build(),
-                contentDescription = "Alert owner avatar",
+                contentDescription = stringResource(R.string.alert_owner_avatar),
                 placeholder = ColorPainter(placeholderColor),
-                error = ColorPainter(placeholderColor),
+                error = ColorPainter(errorColor),
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape),
                 alignment = Alignment.Center
             )
+
             Spacer(modifier = Modifier.width(12.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = alert.content,
@@ -597,27 +595,39 @@ internal fun KnockAlertItem(
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
                 Text(
-                    text = "From: ${displayableAlert.owner?.displayName ?: "Unknown"}",
+                    text = stringResource(
+                        R.string.from,
+                        displayableAlert.owner?.displayName ?: stringResource(R.string.unknown)
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
                 Text(
-                    text = "Active since: ${TimeUtils.toRelativeTime(alert.targetTime.toEpochMilliseconds())}",
+                    text = stringResource(
+                        R.string.active_since,
+                        TimeUtils.toRelativeTime(alert.targetTime.toEpochMilliseconds())
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             val hasKnocked = displayableAlert.hasKnocked(currentUserId)
+
             val backgroundColor by animateColorAsState(
-                targetValue = if (hasKnocked) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primaryContainer,
+                targetValue =
+                    if (hasKnocked) MaterialTheme.colorScheme.surfaceVariant
+                    else MaterialTheme.colorScheme.primaryContainer,
                 label = "BackgroundColor"
             )
             val iconColor by animateColorAsState(
-                targetValue = if (hasKnocked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+                targetValue =
+                    if (hasKnocked) MaterialTheme.colorScheme.onSurfaceVariant
+                    else MaterialTheme.colorScheme.primary,
                 label = "IconColor"
             )
+
             IconButton(
                 onClick = { onKnockAction(alert) },
                 enabled = !hasKnocked,
