@@ -1,6 +1,6 @@
 package com.sujalkumar.knockme.ui.model
 
-data class AlertOwner(
+data class ProfileUi(
     val displayName: String?,
     val photoUrl: String?
 )

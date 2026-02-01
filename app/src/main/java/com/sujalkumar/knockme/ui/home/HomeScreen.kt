@@ -80,9 +80,9 @@ import com.sujalkumar.knockme.R
 import com.sujalkumar.knockme.domain.model.KnockAlert
 import com.sujalkumar.knockme.domain.model.User
 import com.sujalkumar.knockme.ui.common.asString
-import com.sujalkumar.knockme.ui.model.AlertOwner
-import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
+import com.sujalkumar.knockme.ui.model.FeedKnockAlertUi
 import com.sujalkumar.knockme.ui.model.MyKnockAlertUi
+import com.sujalkumar.knockme.ui.model.ProfileUi
 import com.sujalkumar.knockme.ui.theme.KnockMeTheme
 import com.sujalkumar.knockme.util.TimeUtils
 import kotlinx.coroutines.flow.collectLatest
@@ -225,7 +225,7 @@ internal fun HomeScreen(
 internal fun HomeScreenSuccessContent(
     user: User?,
     myKnockAlerts: List<MyKnockAlertUi>,
-    feedKnockAlerts: List<DisplayableKnockAlert>,
+    feedKnockAlerts: List<FeedKnockAlertUi>,
     onShowKnockers: (MyKnockAlertUi) -> Unit,
     onKnockAction: (KnockAlert) -> Unit,
     onNavigateToAddAlert: () -> Unit,
@@ -585,7 +585,7 @@ internal fun MyKnockAlertCard(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun KnockAlertItem(
-    displayableAlert: DisplayableKnockAlert,
+    displayableAlert: FeedKnockAlertUi,
     currentUserId: String?,
     onKnockAction: (KnockAlert) -> Unit,
     modifier: Modifier = Modifier,
@@ -701,11 +701,46 @@ fun KnockersBottomSheetContent(alert: MyKnockAlertUi) {
 
         Spacer(Modifier.height(16.dp))
 
-        alert.alert.knockedByUserIds.forEach { userId ->
+        if (alert.knockers.isEmpty()) {
             Text(
-                text = userId, // temporary
-                style = MaterialTheme.typography.bodyMedium
+                text = stringResource(R.string.no_one_has_knocked_yet),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        } else {
+            alert.knockers.forEach { profile ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(profile.photoUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = stringResource(R.string.knocker_avatar),
+                        placeholder = ColorPainter(
+                            MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        error = ColorPainter(
+                            MaterialTheme.colorScheme.inverseOnSurface
+                        ),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                    )
+
+                    Spacer(Modifier.width(12.dp))
+
+                    Text(
+                        text = profile.displayName ?: stringResource(R.string.unknown),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
         }
     }
 }
@@ -778,7 +813,7 @@ fun HomeScreenPreviewWithUserAndAlerts() {
             )
         )
         val feedAlerts = listOf(
-            DisplayableKnockAlert(
+            FeedKnockAlertUi(
                 alert = KnockAlert(
                     id = "feedAlert1",
                     ownerId = "otherUser456",
@@ -787,12 +822,12 @@ fun HomeScreenPreviewWithUserAndAlerts() {
                     targetTime = Instant.fromEpochMilliseconds(now - 100000),
                     knockedByUserIds = listOf("someUserId")
                 ),
-                owner = AlertOwner(
+                owner = ProfileUi(
                     displayName = "Other User",
                     photoUrl = null
                 )
             ),
-            DisplayableKnockAlert(
+            FeedKnockAlertUi(
                 alert = KnockAlert(
                     id = "feedAlert2",
                     ownerId = "anotherUser789",
@@ -801,7 +836,7 @@ fun HomeScreenPreviewWithUserAndAlerts() {
                     targetTime = Instant.fromEpochMilliseconds(now - 50000),
                     knockedByUserIds = emptyList()
                 ),
-                owner = AlertOwner(
+                owner = ProfileUi(
                     displayName = "Another User",
                     photoUrl = null
                 )
@@ -833,7 +868,7 @@ fun HomeScreenPreviewUserNoOwnAlerts() {
         )
         val now = Clock.System.now().toEpochMilliseconds()
         val feedAlerts = listOf(
-            DisplayableKnockAlert(
+            FeedKnockAlertUi(
                 alert = KnockAlert(
                     id = "feedAlert1",
                     ownerId = "otherUser456",
@@ -842,7 +877,7 @@ fun HomeScreenPreviewUserNoOwnAlerts() {
                     targetTime = Instant.fromEpochMilliseconds(now - 100000),
                     knockedByUserIds = emptyList()
                 ),
-                owner = AlertOwner(
+                owner = ProfileUi(
                     displayName = "Other User",
                     photoUrl = null
                 )

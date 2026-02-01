@@ -12,9 +12,9 @@ import com.sujalkumar.knockme.domain.usecase.ObserveMyAlertsUseCase
 import com.sujalkumar.knockme.domain.usecase.SignOutUseCase
 import com.sujalkumar.knockme.ui.common.UiText
 import com.sujalkumar.knockme.ui.mapper.toUiText
-import com.sujalkumar.knockme.ui.model.AlertOwner
-import com.sujalkumar.knockme.ui.model.DisplayableKnockAlert
+import com.sujalkumar.knockme.ui.model.FeedKnockAlertUi
 import com.sujalkumar.knockme.ui.model.MyKnockAlertUi
+import com.sujalkumar.knockme.ui.model.ProfileUi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -46,8 +46,8 @@ class HomeViewModel(
 ) : ViewModel() {
 
     private val loadingState = MutableStateFlow(true)
-    private val ownersMap = MutableStateFlow<Map<String, AlertOwner>>(emptyMap())
-    private val observedOwnerIds = mutableSetOf<String>()
+    private val profilesMap = MutableStateFlow<Map<String, ProfileUi>>(emptyMap())
+    private val observedProfileIds = mutableSetOf<String>()
 
     private val _uiEvents = Channel<HomeUiEvent>(Channel.BUFFERED)
     val uiEvents = _uiEvents.receiveAsFlow()
@@ -59,14 +59,14 @@ class HomeViewModel(
         }
     }.onStart { emit(System.currentTimeMillis()) }
 
-    private val feedAlertsState = observeFeedAlertsUseCase()
+    private val feedAlertsStateFlow = observeFeedAlertsUseCase()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptyList()
         )
 
-    private val myAlertsState = observeMyAlertsUseCase()
+    private val myAlertsStateFlow = observeMyAlertsUseCase()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -76,11 +76,11 @@ class HomeViewModel(
     val uiState: StateFlow<HomeUiState> =
         combine(
             authRepository.currentUser,
-            feedAlertsState,
-            myAlertsState,
-            ownersMap,
+            feedAlertsStateFlow,
+            myAlertsStateFlow,
+            profilesMap,
             combine(loadingState, ticker) { loading, now -> loading to now }
-        ) { user, feedAlerts, myAlerts, owners, loadingAndNow ->
+        ) { user, feedAlerts, myAlerts, profiles, loadingAndNow ->
             val (isLoading, now) = loadingAndNow
 
             val readyFeedAlerts = feedAlerts.filter {
@@ -103,7 +103,8 @@ class HomeViewModel(
                 MyKnockAlertUi(
                     alert = alert,
                     progress = progress,
-                    isActive = isActive
+                    isActive = isActive,
+                    knockers = alert.knockedByUserIds.mapNotNull { profiles[it] }
                 )
             }
 
@@ -111,9 +112,9 @@ class HomeViewModel(
                 user = user,
                 myKnockAlerts = myAlertsUi,
                 feedKnockAlerts = readyFeedAlerts.map { alert ->
-                    DisplayableKnockAlert(
+                    FeedKnockAlertUi(
                         alert = alert,
-                        owner = owners[alert.ownerId]
+                        owner = profiles[alert.ownerId]
                     )
                 },
                 isLoading = isLoading
@@ -134,26 +135,40 @@ class HomeViewModel(
             loadingState.value = false
         }
 
-        feedAlertsState
-            .map { alerts -> alerts.map { it.ownerId }.distinct() }
+        feedAlertsStateFlow
+            .map { alerts ->
+                alerts.map {
+                    it.ownerId
+                }.distinct()
+            }
             .distinctUntilChanged()
             .onEach { ownerIds ->
-                ownerIds
-                    .filterNot { observedOwnerIds.contains(it) }
-                    .forEach { ownerId ->
-                        observedOwnerIds.add(ownerId)
-                        observeOwnerProfile(ownerId)
-                    }
+                ownerIds.forEach(::observeProfile)
+            }
+            .launchIn(viewModelScope)
+
+        myAlertsStateFlow
+            .map { alerts ->
+                alerts.flatMap {
+                    it.knockedByUserIds
+                }.distinct()
+            }
+            .distinctUntilChanged()
+            .onEach { knockerIds ->
+                knockerIds.forEach(::observeProfile)
             }
             .launchIn(viewModelScope)
     }
 
-    private fun observeOwnerProfile(ownerId: String) {
-        otherUsersRepository.observeUser(ownerId)
+
+    private fun observeProfile(userId: String) {
+        if (!observedProfileIds.add(userId)) return
+
+        otherUsersRepository.observeUser(userId)
             .onEach { user ->
                 user?.let {
-                    ownersMap.update { current ->
-                        current + (ownerId to AlertOwner(
+                    profilesMap.update { current ->
+                        current + (userId to ProfileUi(
                             displayName = it.displayName,
                             photoUrl = it.photoUrl
                         ))
