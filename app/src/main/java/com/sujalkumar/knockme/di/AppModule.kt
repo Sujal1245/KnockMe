@@ -25,6 +25,8 @@ import com.sujalkumar.knockme.domain.usecase.SignOutUseCase
 import com.sujalkumar.knockme.ui.addalert.AddKnockAlertViewModel
 import com.sujalkumar.knockme.ui.home.HomeViewModel
 import com.sujalkumar.knockme.ui.onboarding.OnboardingViewModel
+import com.sujalkumar.knockme.ui.user.UserStore
+import com.sujalkumar.knockme.ui.user.UserStoreImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -78,4 +80,6 @@ val appModule = module {
         bind<AuthRepository>()
         createdAtStart()
     }
+
+    singleOf(::UserStoreImpl) { bind<UserStore>() }
 }

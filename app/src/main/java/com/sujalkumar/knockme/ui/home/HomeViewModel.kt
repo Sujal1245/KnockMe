@@ -5,16 +5,16 @@ import androidx.lifecycle.viewModelScope
 import com.sujalkumar.knockme.R
 import com.sujalkumar.knockme.domain.model.KnockAlertResult
 import com.sujalkumar.knockme.domain.repository.AuthRepository
-import com.sujalkumar.knockme.domain.repository.OtherUsersRepository
 import com.sujalkumar.knockme.domain.usecase.KnockOnAlertUseCase
 import com.sujalkumar.knockme.domain.usecase.ObserveFeedAlertsUseCase
 import com.sujalkumar.knockme.domain.usecase.ObserveMyAlertsUseCase
 import com.sujalkumar.knockme.domain.usecase.SignOutUseCase
 import com.sujalkumar.knockme.ui.common.UiText
 import com.sujalkumar.knockme.ui.mapper.toUiText
+import com.sujalkumar.knockme.ui.mapper.toUserSummary
 import com.sujalkumar.knockme.ui.model.FeedKnockAlertUi
 import com.sujalkumar.knockme.ui.model.MyKnockAlertUi
-import com.sujalkumar.knockme.ui.model.ProfileUi
+import com.sujalkumar.knockme.ui.user.UserStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -31,7 +31,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
@@ -42,12 +41,10 @@ class HomeViewModel(
     observeFeedAlertsUseCase: ObserveFeedAlertsUseCase,
     observeMyAlertsUseCase: ObserveMyAlertsUseCase,
     private val knockOnAlertUseCase: KnockOnAlertUseCase,
-    private val otherUsersRepository: OtherUsersRepository
+    private val userStore: UserStore
 ) : ViewModel() {
 
     private val loadingState = MutableStateFlow(true)
-    private val profilesMap = MutableStateFlow<Map<String, ProfileUi>>(emptyMap())
-    private val observedProfileIds = mutableSetOf<String>()
 
     private val _uiEvents = Channel<HomeUiEvent>(Channel.BUFFERED)
     val uiEvents = _uiEvents.receiveAsFlow()
@@ -78,7 +75,7 @@ class HomeViewModel(
             authRepository.currentUser,
             feedAlertsStateFlow,
             myAlertsStateFlow,
-            profilesMap,
+            userStore.users,
             combine(loadingState, ticker) { loading, now -> loading to now }
         ) { user, feedAlerts, myAlerts, profiles, loadingAndNow ->
             val (isLoading, now) = loadingAndNow
@@ -104,7 +101,7 @@ class HomeViewModel(
                     alert = alert,
                     progress = progress,
                     isActive = isActive,
-                    knockers = alert.knockedByUserIds.mapNotNull { profiles[it] }
+                    knockers = alert.knockedByUserIds.mapNotNull { profiles[it]?.toUserSummary() }
                 )
             }
 
@@ -114,7 +111,7 @@ class HomeViewModel(
                 feedKnockAlerts = readyFeedAlerts.map { alert ->
                     FeedKnockAlertUi(
                         alert = alert,
-                        owner = profiles[alert.ownerId]
+                        owner = profiles[alert.ownerId]?.toUserSummary()
                     )
                 },
                 isLoading = isLoading
@@ -143,7 +140,7 @@ class HomeViewModel(
             }
             .distinctUntilChanged()
             .onEach { ownerIds ->
-                ownerIds.forEach(::observeProfile)
+                ownerIds.forEach { userStore.ensureUserObserved(it) }
             }
             .launchIn(viewModelScope)
 
@@ -155,28 +152,11 @@ class HomeViewModel(
             }
             .distinctUntilChanged()
             .onEach { knockerIds ->
-                knockerIds.forEach(::observeProfile)
+                knockerIds.forEach { userStore.ensureUserObserved(it) }
             }
             .launchIn(viewModelScope)
     }
 
-
-    private fun observeProfile(userId: String) {
-        if (!observedProfileIds.add(userId)) return
-
-        otherUsersRepository.observeUser(userId)
-            .onEach { user ->
-                user?.let {
-                    profilesMap.update { current ->
-                        current + (userId to ProfileUi(
-                            displayName = it.displayName,
-                            photoUrl = it.photoUrl
-                        ))
-                    }
-                }
-            }
-            .launchIn(viewModelScope)
-    }
 
     fun knockOnAlert(alertId: String) {
         viewModelScope.launch {

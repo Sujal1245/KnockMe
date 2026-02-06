@@ -82,7 +82,7 @@ import com.sujalkumar.knockme.domain.model.User
 import com.sujalkumar.knockme.ui.common.asString
 import com.sujalkumar.knockme.ui.model.FeedKnockAlertUi
 import com.sujalkumar.knockme.ui.model.MyKnockAlertUi
-import com.sujalkumar.knockme.ui.model.ProfileUi
+import com.sujalkumar.knockme.ui.model.UserSummary
 import com.sujalkumar.knockme.ui.theme.KnockMeTheme
 import com.sujalkumar.knockme.util.TimeUtils
 import kotlinx.coroutines.flow.collectLatest
@@ -822,7 +822,7 @@ fun HomeScreenPreviewWithUserAndAlerts() {
                     targetTime = Instant.fromEpochMilliseconds(now - 100000),
                     knockedByUserIds = listOf("someUserId")
                 ),
-                owner = ProfileUi(
+                owner = UserSummary(
                     displayName = "Other User",
                     photoUrl = null
                 )
@@ -836,7 +836,7 @@ fun HomeScreenPreviewWithUserAndAlerts() {
                     targetTime = Instant.fromEpochMilliseconds(now - 50000),
                     knockedByUserIds = emptyList()
                 ),
-                owner = ProfileUi(
+                owner = UserSummary(
                     displayName = "Another User",
                     photoUrl = null
                 )
@@ -877,7 +877,7 @@ fun HomeScreenPreviewUserNoOwnAlerts() {
                     targetTime = Instant.fromEpochMilliseconds(now - 100000),
                     knockedByUserIds = emptyList()
                 ),
-                owner = ProfileUi(
+                owner = UserSummary(
                     displayName = "Other User",
                     photoUrl = null
                 )

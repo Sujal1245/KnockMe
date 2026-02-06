@@ -6,5 +6,5 @@ data class MyKnockAlertUi(
     val alert: KnockAlert,
     val progress: Float,
     val isActive: Boolean,
-    val knockers: List<ProfileUi> = emptyList()
+    val knockers: List<UserSummary> = emptyList()
 )

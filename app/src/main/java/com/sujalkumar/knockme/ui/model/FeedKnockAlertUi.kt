@@ -4,7 +4,7 @@ import com.sujalkumar.knockme.domain.model.KnockAlert
 
 data class FeedKnockAlertUi(
     val alert: KnockAlert,
-    val owner: ProfileUi?
+    val owner: UserSummary?
 ) {
     fun hasKnocked(currentUserId: String?): Boolean =
         currentUserId != null && currentUserId in alert.knockedByUserIds
