@@ -9,6 +9,10 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.sujalkumar.knockme.ui.addalert.AddKnockAlertRoute
 import com.sujalkumar.knockme.ui.home.HomeRoute
+import com.sujalkumar.knockme.ui.profile.ProfileRoute
+import com.sujalkumar.knockme.ui.profile.ProfileViewModel
+import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun MainNavigation(
@@ -27,6 +31,9 @@ fun MainNavigation(
                 HomeRoute(
                     onNavigateToAddAlert = {
                         mainBackStack.add(Route.Main.AddKnockAlert)
+                    },
+                    onNavigateToProfile = { userId ->
+                        mainBackStack.add(Route.Main.Profile(userId))
                     }
                 )
             }
@@ -36,6 +43,20 @@ fun MainNavigation(
                     onNavigateUp = {
                         mainBackStack.remove(Route.Main.AddKnockAlert)
                     }
+                )
+            }
+
+            entry<Route.Main.Profile> { route ->
+                val viewModel = koinViewModel<ProfileViewModel>(
+                    parameters = { parametersOf(route.userId) }
+                )
+
+                ProfileRoute(
+                    viewModel = viewModel,
+                    onNavigateUp = {
+                        mainBackStack.remove(route)
+                    },
+                    onEditProfileClick = { }
                 )
             }
         }

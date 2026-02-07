@@ -6,6 +6,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -96,7 +97,8 @@ import kotlin.time.Instant
 fun HomeRoute(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = koinViewModel(),
-    onNavigateToAddAlert: () -> Unit
+    onNavigateToAddAlert: () -> Unit,
+    onNavigateToProfile: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -129,6 +131,7 @@ fun HomeRoute(
         onKnockAction = { alert -> viewModel.knockOnAlert(alert.id) },
         onSignOut = viewModel::onSignOut,
         onNavigateToAddAlert = onNavigateToAddAlert,
+        onNavigateToProfile = onNavigateToProfile,
         modifier = modifier,
     )
 
@@ -152,6 +155,7 @@ internal fun HomeScreen(
     onKnockAction: (KnockAlert) -> Unit,
     onSignOut: () -> Unit,
     onNavigateToAddAlert: () -> Unit,
+    onNavigateToProfile: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val showFab = uiState.myKnockAlerts.isNotEmpty()
@@ -211,6 +215,7 @@ internal fun HomeScreen(
                     onShowKnockers = onShowKnockers,
                     onKnockAction = onKnockAction,
                     onNavigateToAddAlert = onNavigateToAddAlert,
+                    onNavigateToProfile = onNavigateToProfile,
                     modifier = Modifier
                 )
             }
@@ -229,6 +234,7 @@ internal fun HomeScreenSuccessContent(
     onShowKnockers: (MyKnockAlertUi) -> Unit,
     onKnockAction: (KnockAlert) -> Unit,
     onNavigateToAddAlert: () -> Unit,
+    onNavigateToProfile: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -243,7 +249,12 @@ internal fun HomeScreenSuccessContent(
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
-                modifier = Modifier.padding(20.dp),
+                modifier = Modifier
+                    .padding(20.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clickable { user?.uid?.let(onNavigateToProfile) }
+                    .padding(4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
@@ -441,6 +452,7 @@ internal fun HomeScreenSuccessContent(
                                 displayableAlert = displayableAlert,
                                 currentUserId = user?.uid,
                                 onKnockAction = onKnockAction,
+                                onNavigateToProfile = onNavigateToProfile,
                                 shape = shape
                             )
                         }
@@ -588,6 +600,7 @@ internal fun KnockAlertItem(
     displayableAlert: FeedKnockAlertUi,
     currentUserId: String?,
     onKnockAction: (KnockAlert) -> Unit,
+    onNavigateToProfile: (String) -> Unit,
     modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.medium
 ) {
@@ -620,7 +633,10 @@ internal fun KnockAlertItem(
                 error = ColorPainter(errorColor),
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(CircleShape),
+                    .clip(CircleShape)
+                    .clickable {
+                        displayableAlert.alert.ownerId.let(onNavigateToProfile)
+                    },
                 alignment = Alignment.Center
             )
 
@@ -760,6 +776,7 @@ fun HomeScreenPreviewNoUser() {
             onShowKnockers = {},
             onKnockAction = {},
             onNavigateToAddAlert = {},
+            onNavigateToProfile = {},
             onSignOut = {}
         )
     }
@@ -853,6 +870,7 @@ fun HomeScreenPreviewWithUserAndAlerts() {
             onKnockAction = { println("Preview Knock: ${it.id}") },
             onShowKnockers = {},
             onNavigateToAddAlert = {},
+            onNavigateToProfile = {},
             onSignOut = {}
         )
     }
@@ -894,6 +912,7 @@ fun HomeScreenPreviewUserNoOwnAlerts() {
             onKnockAction = { println("Preview Knock: ${it.id}") },
             onShowKnockers = {},
             onNavigateToAddAlert = {},
+            onNavigateToProfile = {},
             onSignOut = {}
         )
     }

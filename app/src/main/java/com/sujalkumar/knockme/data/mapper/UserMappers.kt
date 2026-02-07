@@ -1,5 +1,6 @@
 package com.sujalkumar.knockme.data.mapper
 
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
 import com.sujalkumar.knockme.data.model.AppUser
 import com.sujalkumar.knockme.data.model.FirestoreUser
@@ -25,15 +26,22 @@ fun FirestoreUser.toUser(): User {
     return User(
         uid = uid,
         displayName = displayName,
-        photoUrl = photoUrl
+        photoUrl = photoUrl,
+        createdAtMillis = createdAt?.toDate()?.time
     )
 }
 
-fun User.toFirestoreUser(): FirestoreUser{
+fun User.toFirestoreUser(): FirestoreUser {
     return FirestoreUser(
         uid = uid,
         displayName = displayName,
-        photoUrl = photoUrl
+        photoUrl = photoUrl,
+        createdAt = createdAtMillis?.let {
+            Timestamp(
+                it / 1000,
+                ((it % 1000) * 1_000_000).toInt()
+            )
+        }
     )
 }
 

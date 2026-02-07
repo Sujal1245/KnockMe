@@ -23,5 +23,7 @@ sealed interface Route : NavKey {
         @Serializable
         data object AddKnockAlert : NavKey
 
+        @Serializable
+        data class Profile(val userId: String) : NavKey
     }
 }

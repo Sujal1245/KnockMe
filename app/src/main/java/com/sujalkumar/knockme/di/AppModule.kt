@@ -25,6 +25,7 @@ import com.sujalkumar.knockme.domain.usecase.SignOutUseCase
 import com.sujalkumar.knockme.ui.addalert.AddKnockAlertViewModel
 import com.sujalkumar.knockme.ui.home.HomeViewModel
 import com.sujalkumar.knockme.ui.onboarding.OnboardingViewModel
+import com.sujalkumar.knockme.ui.profile.ProfileViewModel
 import com.sujalkumar.knockme.ui.user.UserStore
 import com.sujalkumar.knockme.ui.user.UserStoreImpl
 import kotlinx.coroutines.CoroutineScope
@@ -45,6 +46,7 @@ val appModule = module {
     viewModelOf(::OnboardingViewModel)
     viewModelOf(::HomeViewModel)
     viewModelOf(::AddKnockAlertViewModel)
+    viewModelOf(::ProfileViewModel)
 
     factoryOf(::ObserveFeedAlertsUseCase)
     factoryOf(::ObserveMyAlertsUseCase)
