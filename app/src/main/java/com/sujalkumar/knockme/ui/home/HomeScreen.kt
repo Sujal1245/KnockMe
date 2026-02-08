@@ -140,7 +140,11 @@ fun HomeRoute(
             showBottomSheet = false
         }) {
             KnockersBottomSheetContent(
-                alert = selectedAlertForKnockers!!
+                alert = selectedAlertForKnockers!!,
+                onNavigateToProfile = {
+                    showBottomSheet = false
+                    onNavigateToProfile(it)
+                }
             )
         }
     }
@@ -703,7 +707,10 @@ internal fun KnockAlertItem(
 }
 
 @Composable
-fun KnockersBottomSheetContent(alert: MyKnockAlertUi) {
+fun KnockersBottomSheetContent(
+    alert: MyKnockAlertUi,
+    onNavigateToProfile: (String) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -728,7 +735,9 @@ fun KnockersBottomSheetContent(alert: MyKnockAlertUi) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                        .clip(CircleShape)
+                        .clickable { profile.uid.let(onNavigateToProfile) }
+                        .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     AsyncImage(
@@ -840,6 +849,7 @@ fun HomeScreenPreviewWithUserAndAlerts() {
                     knockedByUserIds = listOf("someUserId")
                 ),
                 owner = UserSummary(
+                    uid = "OUser",
                     displayName = "Other User",
                     photoUrl = null
                 )
@@ -854,6 +864,7 @@ fun HomeScreenPreviewWithUserAndAlerts() {
                     knockedByUserIds = emptyList()
                 ),
                 owner = UserSummary(
+                    uid = "AUser",
                     displayName = "Another User",
                     photoUrl = null
                 )
@@ -896,6 +907,7 @@ fun HomeScreenPreviewUserNoOwnAlerts() {
                     knockedByUserIds = emptyList()
                 ),
                 owner = UserSummary(
+                    uid = "OUser",
                     displayName = "Other User",
                     photoUrl = null
                 )
